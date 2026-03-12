@@ -1,6 +1,6 @@
 # QBR Portfolio Health Analyzer — System Blueprint
 
-**Author:** Tekla Dobrowiecki  
+**Author:** Tekla
 **Version:** 2.1  
 **Date:** March 2026  
 **Artifact type:** Architectural Blueprint + PoC Design
