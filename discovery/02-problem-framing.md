@@ -45,6 +45,19 @@ Jira captures every ticket, comment, status change, and assignment — regardles
 **3. Email has no ground truth.**
 There is no way to know from email alone whether an issue was resolved. A Jira ticket has a status. An email thread just ends — and "it stopped being discussed" does not mean "it was fixed."
 
+**4. Email is unstructured — and that structural gap is the reason the pipeline is complex.**
+Jira stores structured data: issue type, status, priority, assignee, due date, sprint, labels. Detecting a stalled decision in Jira is a JQL query (`status unchanged for >5 business days`). Detecting it in email requires parsing free-form text, inferring intent, detecting the *absence* of a response, handling thread noise, and validating the result with an LLM — which is precisely what Stages A and B of this system do.
+
+The same applies to every flag type:
+
+| Flag | In Jira | In email |
+|------|---------|---------|
+| Stalled decision | JQL query on status age | Parse thread, detect non-response, infer from tone |
+| Scope change | New ticket or field change linked to sprint | Semantic analysis of natural language across messages |
+| Incident resolution | Single field value (Resolved/Closed) | Inferred from keywords, thread ending, follow-up messages |
+
+The complexity of the PoC pipeline is not an architectural choice — it is the unavoidable cost of working with unstructured data. A Jira-first system would replace most of Stages A and B with simple, deterministic database queries.
+
 ---
 
 ## The Meta-Problem: Email Is a Process Failure Signal
