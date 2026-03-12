@@ -46,7 +46,7 @@ Jira captures every ticket, comment, status change, and assignment — regardles
 There is no way to know from email alone whether an issue was resolved. A Jira ticket has a status. An email thread just ends — and "it stopped being discussed" does not mean "it was fixed."
 
 **4. Email is unstructured — and that structural gap is the reason the pipeline is complex.**
-Jira stores structured data: issue type, status, priority, assignee, due date, sprint, labels. Detecting a stalled decision in Jira is a JQL query (`status unchanged for >5 business days`). Detecting it in email requires parsing free-form text, inferring intent, detecting the *absence* of a response, handling thread noise, and validating the result with an LLM — which is precisely what Stages A and B of this system do.
+Jira stores structured data: issue type, status, priority, assignee, due date, sprint, labels. Detecting a stalled decision in Jira is a JQL query (`status unchanged for >5 business days`). Detecting it in email requires parsing free-form text, inferring intent, detecting the *absence* of a response, handling thread noise, and validating the result with an LLM.
 
 The same applies to every flag type:
 
