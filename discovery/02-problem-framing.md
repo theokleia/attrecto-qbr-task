@@ -56,7 +56,7 @@ The same applies to every flag type:
 | Scope change | New ticket or field change linked to sprint | Semantic analysis of natural language across messages |
 | Incident resolution | Single field value (Resolved/Closed) | Inferred from keywords, thread ending, follow-up messages |
 
-The complexity of the PoC pipeline is not an architectural choice — it is the unavoidable cost of working with unstructured data. A Jira-first system would replace most of Stages A and B with simple, deterministic database queries.
+The complexity of an email-based analysis pipeline is not an architectural choice — it is the unavoidable cost of working with unstructured data. A Jira-first system would replace most of that analytical work with simple, deterministic database queries.
 
 ---
 
