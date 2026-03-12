@@ -3,8 +3,6 @@
 **Date:** 2026-03-12
 **Format:** Question → Assumed Answer → How it shapes the solution
 
-These are questions a Product Designer or Business Analyst would ask before designing any solution. Since no real client is available to interview, each question includes the assumed answer based on the task brief, email data analysis, and industry knowledge of software development agencies.
-
 ---
 
 ## About the User (Director of Engineering)
