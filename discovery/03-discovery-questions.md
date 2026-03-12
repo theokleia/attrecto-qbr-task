@@ -164,6 +164,10 @@ These are questions a Product Designer or Business Analyst would ask before desi
 *Assumed answer:* Unknown — but for a European agency, data residency preferences may favor EU-hosted models or providers with GDPR-compliant data processing agreements.
 *Impact on solution:* The `.env` configuration allows swapping API providers without code changes. The Blueprint should note that model provider substitution is supported as a configuration option.
 
+**Q32: What language(s) do your teams communicate in?**
+*Assumed answer:* Hungarian primary, English in technical and vendor contexts. Many threads are bilingual — Hungarian in the narrative, English in code references, error messages, and tool names.
+*Impact on solution:* Rule engine signal lists require bilingual coverage (Hungarian and English scope change indicators, resolution signals, incident keywords). LLM prompts must explicitly instruct the model to handle mixed-language threads and not default to English-only pattern matching. Report output language should be configurable for clients operating in different markets.
+
 ---
 
 ## About Integration

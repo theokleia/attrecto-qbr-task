@@ -65,7 +65,7 @@ The DoE currently prepares the QBR by:
 | No cross-project view — each PM only sees their own project | High | Spec gaps, wrong-thread messages appear in all 3 projects simultaneously |
 | Client-reported issues arrive through too many hops | High | Client emails team member directly → no ticket → no visibility |
 | Can't tell what's truly urgent vs. what's noise | Medium | 14% of email content is off-topic (lunch, birthdays) |
-| No early warning for compliance/legal issues | Critical | GDPR violation was caught by the client, not internally |
+| No early warning for compliance/legal issues | Critical | A GDPR near-miss was caught by a BA reading an email — not by any systematic check, and with zero DoE visibility until after it was resolved |
 
 ---
 

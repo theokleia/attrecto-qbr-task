@@ -22,7 +22,7 @@ The email data provided illustrates this perfectly:
 
 | What happened | Where it lived | Did the DoE see it in time? |
 |--------------|----------------|----------------------------|
-| GDPR compliance violation (newsletter pre-checked) | Email thread | No — the client found it first |
+| GDPR near-miss (newsletter pre-checked T&C checkbox) | Email thread | No — a BA caught it by chance in email, stopped deployment; DoE had zero visibility into the near-miss |
 | Developer blocked 30+ days on CI/CD | Email thread | Unclear — PM had to follow up twice |
 | Production login outage (env var in deploy script) | Email thread | Only after the client panicked |
 | Scope creep: SSO, CSV export, SKU search | Email threads | Only when team members happened to escalate |
@@ -59,7 +59,7 @@ In a healthy software development team:
 - Blockers are escalated in Jira, not through multi-week email chains
 - Compliance issues are linked to Jira tickets with legal notes attached
 
-The fact that the CI/CD blocker lasted 30 days in an email thread, or that the GDPR violation was discovered by the client rather than flagged internally, tells us something damning: **the team is not using Jira as intended**. The email layer is filling the gap that proper process would eliminate.
+The fact that the CI/CD blocker lasted 30 days in an email thread, or that a GDPR near-miss was caught only by chance — by a BA reading an email, with no systematic compliance check and no DoE visibility — tells us something damning: **the team is not using Jira as intended**. The email layer is filling the gap that proper process would eliminate.
 
 This means a smart system should do two things:
 1. Use Jira as the primary data source (where the managed work lives)

@@ -127,6 +127,7 @@ With Jira as the backbone (Option B) or full multi-source (Option C), every answ
 | False positive rate | Medium | Low | Low |
 | Continuous operation | Requires extra work | Natural | Natural |
 | Conversational interface | Not suitable | Suitable | Best fit |
+| Est. cost per QBR run | ~$0.05–0.20 (18 threads, ~75K tokens) | ~$0.20–0.80 (email + Jira volume) | Variable — scales with source count |
 | Recommended for | PoC / no-Jira orgs | Production standard | Enterprise |
 
 ---

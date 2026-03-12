@@ -39,6 +39,8 @@ cd solution/src
 python analyzer.py ../input/AI_Developer_files --mock
 ```
 
+> ⚠️ **Analyzing historical data?** The reference date defaults to the last day of the *current* quarter. If running against past data (e.g., the provided Q2 2025 sample), set `ANALYSIS_REFERENCE_DATE=2025-07-31` in `.env` — otherwise "days open" calculations will be inflated by the gap between then and now.
+
 Output: `solution/output/sample-report.md`
 
 ### Run with live LLM calls (claude-sonnet-4-6)
@@ -153,5 +155,6 @@ As documented in the Blueprint:
 - Data retention / GDPR deletion policy is not implemented
 - RAG vector store uses in-memory simplified approach (Stage C groups per project)
 - `acknowledged_items.json` suppression mechanism is not implemented in this version
+- Project-to-team mapping from `Colleagues.txt` uses positional group ordering calibrated for the provided sample data — a production implementation would require a configurable mapping
 
 These are explicitly flagged as production readiness gaps, not oversights.
