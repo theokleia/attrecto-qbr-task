@@ -146,7 +146,7 @@ Specs arrive via Zeplin (design handoff) and are shared as mockup links in email
 There is no standardized bug reporting path. The email data shows:
 - Clients reporting bugs directly to PMs or Account Managers (login outage report to Zoltán Kiss)
 - Bugs discovered internally during development but logged informally in email rather than as Jira tickets
-- The GDPR checkbox violation was caught by the client, not during internal QA
+- A GDPR near-miss (pre-checked newsletter + unauthorized T&C scope change) was caught by a BA reading an email thread — not by any systematic QA or compliance process, and with zero DoE visibility
 
 This creates a three-tier visibility gap:
 1. **Client-reported bugs**: Enter the system only if someone manually creates a ticket
