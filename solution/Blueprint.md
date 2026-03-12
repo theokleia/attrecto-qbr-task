@@ -818,11 +818,13 @@ This is explicitly flagged as a production readiness gap not addressed in the Po
 
 ## Section 5 — Architectural Risk & Mitigation
 
-### 5.1 The Single Biggest Architectural Risk: Context Collapse
+### 5.1 Low-Probability, High-Impact Risk: Context Collapse
 
-**The risk:** Long threads exceed the LLM context window. Truncating produces **confident-but-wrong analysis** — worse than no analysis because it generates authoritative-sounding incorrect information. This is compounded by the over-trust failure mode.
+**Likelihood in practice: Low.** Modern LLMs used in this pipeline (claude-sonnet-4-6, gpt-5-nano) have context windows of 128k–200k tokens. A typical email thread — even a long one spanning weeks with 50+ messages — sits well within 20,000–30,000 tokens. Context overflow from a single email thread is not a realistic failure mode under normal operating conditions.
 
-**v2.1 primary architecture: RAG-based retrieval.**
+**Why it remains worth noting:** If it did occur — for example in an unusually long multi-party thread, or if the system were extended to include document attachments — truncation would produce **confident-but-wrong analysis**: worse than no analysis, because it generates authoritative-sounding incorrect information. This would compound the over-trust failure mode (see Section 5.3) in a particularly dangerous way.
+
+**Scale mitigation — RAG-based retrieval (recommended for production):**
 
 ```
 Per-project email store
@@ -839,7 +841,9 @@ Per-project email store
              [Never processes full corpus at once]
 ```
 
-**For the PoC:** In-memory simplified approach — Stage B summaries grouped per project, submitted to Stage C. Demonstrates the pattern without vector infrastructure.
+This architecture makes the system robust even if corpora grow significantly (multi-year history, document attachments, large teams). It is not required for the current PoC use case.
+
+**For the PoC:** In-memory simplified approach — Stage B summaries grouped per project, submitted to Stage C. Demonstrates the pattern without vector infrastructure. Context limits are not a concern at this scale.
 
 ### 5.2 Batch/Continuous Duality — Honest Assessment of the Gap
 
