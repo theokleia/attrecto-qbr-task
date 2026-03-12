@@ -33,6 +33,22 @@
 
 ---
 
+## About the Business Goal
+
+**Q33: What decision do you want the Director to make from this report?**
+*Assumed answer:* Primarily: which projects need immediate intervention before the QBR — whether that means reallocating resources, confronting a PM, escalating to the CEO, or recommending a contract extension. Secondarily: which systemic patterns need a process-level fix rather than a project-level one.
+*Impact on solution:* The report must be structured around decisions, not descriptions. Every flagged item should make it obvious what the Director's next move is. This is the difference between a status report and a decision support tool.
+
+**Q34: What does "portfolio health" mean in your organization?**
+*Assumed answer:* Delivery reliability (are projects on schedule and within scope?), client satisfaction (are clients escalating?), and risk exposure (are there compliance, legal, or production incidents open?). Budget adherence and team stability are secondary signals.
+*Impact on solution:* The flag taxonomy must map to the client's own definition of health, not a generic one. The report structure should make it visible which dimension each flag is touching so the Director can immediately orient themselves.
+
+**Q35: What is the worst failure today — missed risks, wasted time, late escalations, inaccurate status, or too much noise?**
+*Assumed answer:* Late escalations — the DoE finds out about serious issues at the QBR, not before. Missed risks and inaccurate status are close second and third.
+*Impact on solution:* The system should optimise for recall over precision for high-severity flags. It is better to surface a false positive that a PM quickly dismisses than to miss a real issue. Lower-severity categories can apply stricter filtering to manage noise fatigue.
+
+---
+
 ## About the Data
 
 **Q7: Are emails the only source of project information, or are other tools in use?**
@@ -55,6 +71,14 @@
 *Assumed answer:* Based on the data, emails go to individual team members (no shared inbox). Some clients email PMs or Account Managers directly.
 *Impact on solution:* The system needs access to multiple inboxes or a forwarding rule to a shared collection address. This is an integration design decision.
 
+**Q36: If email and Jira conflict on the status of an issue, which source wins?**
+*Assumed answer:* Jira should be authoritative for resolution status — a closed ticket means closed. Email is authoritative for context and for issues never ticketed. If an issue appears resolved in Jira but the email thread shows ongoing escalation, that contradiction is itself a flag worth surfacing.
+*Impact on solution:* Conflict resolution logic must be explicit. A Jira-first system does not blindly trust Jira — email-Jira contradictions are treated as a data quality signal, not noise.
+
+**Q37: Do your teams consistently use email subjects, threads, and recipients in a structured way?**
+*Assumed answer:* Partially — project names appear in most subjects, but threads drift (wrong-thread replies, forwarded chains, misdirected messages). The sample data confirms this: 14% of emails are off-topic, and several threads contain messages addressed to the wrong project.
+*Impact on solution:* Parser accuracy is directly proportional to team email discipline. Low-structure environments will produce more false positives and unknown project assignments. The system should log and surface these ambiguous cases rather than silently failing.
+
 ---
 
 ## About Delivery & Ownership
@@ -66,6 +90,18 @@
 **Q13: What is the expected report cadence — quarterly only, or more frequent?**
 *Assumed answer:* Quarterly for the formal QBR presentation, but the underlying monitoring should run continuously or weekly. A surprise in a quarterly report means the system failed to warn months earlier.
 *Impact on solution:* Report generation should be schedulable (cron job or similar). The architecture must support both on-demand and scheduled runs without manual intervention.
+
+**Q38: How will you judge success of the PoC?**
+*Assumed answer:* The PoC is successful if it correctly surfaces the issues a human reviewer would identify in the sample data, with a false negative rate below 20% for high-severity flags. For production: QBR prep time drops from 4 hours to under 30 minutes, and the Director reports at least one issue they would not have caught manually.
+*Impact on solution:* Success criteria must be agreed before delivery, not after. Without a concrete metric, evaluation is subjective and expectations can shift on the day.
+
+**Q39: Who will validate whether a flagged issue was genuinely important — and when?**
+*Assumed answer:* The responsible PM validates flags for their own project before the QBR. The Director reviews disputed flags. Validation must happen at least 48 hours before the meeting to allow for follow-up.
+*Impact on solution:* This is a process ownership question as much as a technical one. The PM validation queue is only useful if someone is assigned to clear it on a defined schedule — unassigned queues fill up and get ignored.
+
+**Q40: What is the minimum viable trust level before this report can influence an actual leadership decision?**
+*Assumed answer:* The system should run in shadow mode for the first quarter — generating a report alongside the manual QBR prep, with the DoE comparing the two. After one quarter of demonstrated accuracy, it becomes the primary input. After two, it can stand alone.
+*Impact on solution:* Shadow mode is a rollout plan, not a technical feature. The architecture supports it, but the client must commit to the comparison discipline for it to produce useful calibration data.
 
 ---
 
@@ -109,6 +145,10 @@
 **Q17: Should the report show resolved items, or only open/unresolved ones?**
 *Assumed answer:* Open items are primary. Resolved items should appear in a separate "recently closed" section as context — especially for the QBR presentation where wins deserve recognition.
 *Impact on solution:* Report has two sections: "Requires Attention" (open flags) and "Recently Resolved" (closed in this quarter). Both inform the QBR narrative.
+
+**Q41: Should the report highlight trends over time — e.g., repeated scope creep or deployment failures across multiple quarters?**
+*Assumed answer:* Yes — this is high value. A project with scope creep in three consecutive quarters has a process problem, not a project problem. The Director needs this longitudinal view to distinguish one-off incidents from systemic failures.
+*Impact on solution:* Longitudinal trending requires persistent state across runs — a historical store of flags, not just the current quarter's output. This is a significant architectural addition beyond the current stateless batch model and should be scoped as a separate phase.
 
 ---
 
@@ -161,6 +201,10 @@
 **Q31: Are there any AI services or providers the organization already has contracts with, or must avoid?**
 *Assumed answer:* Unknown — but for a European agency, data residency preferences may favor EU-hosted models or providers with GDPR-compliant data processing agreements.
 *Impact on solution:* The `.env` configuration allows swapping API providers without code changes. The Blueprint should note that model provider substitution is supported as a configuration option.
+
+**Q42: Are there privacy, GDPR, or contractual restrictions specifically on processing client emails with third-party AI models?**
+*Assumed answer:* Likely yes — client communications may be subject to confidentiality clauses in service agreements, independent of the vendor's own GDPR policy. Sending client emails to an external LLM API may require explicit client consent or a data processing addendum in the client contract.
+*Impact on solution:* This must be clarified with legal counsel before any production deployment. It is distinct from general GDPR awareness (covered in Q28) and must be addressed per client contract.
 
 **Q32: What language(s) do your teams communicate in?**
 *Assumed answer:* Hungarian primary, English in technical and vendor contexts. Many threads are bilingual — Hungarian in the narrative, English in code references, error messages, and tool names.
