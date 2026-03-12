@@ -17,6 +17,9 @@ env/
 # Generated output (sample-report.html is committed intentionally)
 discovery/analysis/email-analysis-report.html
 
+# Discovery archive (working drafts, superseded versions — not part of submission)
+discovery/archive/
+
 # OS
 .DS_Store
 Thumbs.db
