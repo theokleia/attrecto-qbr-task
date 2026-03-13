@@ -1,0 +1,12 @@
+[
+  {
+    "thread_id": "email8",
+    "subject": "Friday Surprise",
+    "project": "DivatKir\u00e1ly",
+    "messages": 5,
+    "tier": 1,
+    "classification": "NOISE",
+    "confidence": 1.0,
+    "reason": "social_only_no_technical_content"
+  }
+]

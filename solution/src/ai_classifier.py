@@ -41,6 +41,178 @@ def get_reference_date() -> datetime:
 # For long-running services, call get_reference_date() directly instead.
 ANALYSIS_REFERENCE_DATE = get_reference_date()
 
+# ── Noise filter: Signal lists ────────────────────────────────────────────────
+
+TECHNICAL_SIGNALS = [
+    # English
+    "deploy", "deployment", "api", "bug", "fix", "server", "database", "frontend",
+    "backend", "ci/cd", "ci ", "build", "release", "staging", "production",
+    "sprint", "ticket", "jira", "github", "pull request", "feature",
+    "endpoint", "function", "error", "exception", "timeout", "latency",
+    "migration", "schema", "query", "security", "vulnerability", "gdpr",
+    "compliance", "contract", "invoice", "deadline", "milestone",
+    "requirement", "specification", "scope", "estimate", "client",
+    "callback", "webhook", "import", "export", "csv", "login", "auth",
+    # Hungarian
+    "hiba", "javítás", "fejlesztés", "kiadás", "szerver", "adatbázis",
+    "telepítés", "specifikáció", "ügyfél", "határidő", "projekt",
+]
+
+SOCIAL_SIGNALS = [
+    # English
+    "birthday", "lunch", "restaurant", "dinner", "party", "weekend",
+    "vacation", "holiday", "coffee", "drinks", "celebrate", "surprise",
+    # Hungarian
+    "születésnap", "ebéd", "étterem", "vacsora", "buli", "hétvége",
+    "szabadság", "kávé", "ünnep", "meglepetés",
+]
+
+RE_VERSION_NUMBER = re.compile(r'\bv?\d+\.\d+')
+RE_JIRA_REF = re.compile(r'\b[A-Z]{2,}-\d+\b')  # e.g. PROJ-123
+
+
+def is_noise_heuristic(thread: 'EmailThread') -> tuple[bool, str]:
+    """
+    Tier 1: Fast heuristic noise check — no LLM, no cost.
+    A thread is noise only when ALL messages lack technical/project content
+    AND at least one social signal is present.
+    Returns (is_noise, reason).
+    """
+    all_text = ' '.join(
+        (m.body + ' ' + m.subject).lower() for m in thread.messages
+    )
+
+    # Bail immediately if technical content detected
+    if (
+        any(sig in all_text for sig in TECHNICAL_SIGNALS)
+        or RE_VERSION_NUMBER.search(all_text)
+        or RE_JIRA_REF.search(all_text)
+    ):
+        return False, "technical_content_detected"
+
+    # Bail if project name appears anywhere in the thread
+    from email_parser import PROJECT_PATTERNS
+    for pattern, _ in PROJECT_PATTERNS:
+        if pattern.search(all_text):
+            return False, "project_name_detected"
+
+    # Need a positive social signal to classify as noise
+    if not any(sig in all_text for sig in SOCIAL_SIGNALS):
+        return False, "no_social_signals"
+
+    return True, "social_only_no_technical_content"
+
+
+def is_noise_llm(thread: 'EmailThread') -> tuple[str, float]:
+    """
+    Tier 2: LLM micro-classifier for ambiguous threads (~10% of volume).
+    Uses OpenAI gpt-5-nano (or MICRO_CLASSIFIER_MODEL env override).
+    Returns (classification, confidence) where classification is "PROJECT" or "NOISE".
+    Safe default on any failure: returns ("PROJECT", 0.0) — analyze rather than skip.
+    """
+    openai_key = os.environ.get('OPENAI_API_KEY')
+    if not openai_key:
+        return "PROJECT", 0.0
+
+    model = os.environ.get('MICRO_CLASSIFIER_MODEL', 'gpt-4o-mini')
+
+    # Build compact thread text (cap at 5 messages × 300 chars to limit tokens)
+    parts = []
+    for msg in thread.messages[:5]:
+        parts.append(f"From: {msg.sender_email}\nBody: {msg.body[:300]}")
+    thread_repr = "\n---\n".join(parts)
+
+    prompt = (
+        "Is this email thread primarily about a work project, or primarily social/off-topic?\n"
+        'Return ONLY valid JSON: {"classification": "PROJECT" or "NOISE", "confidence": 0.0-1.0}\n\n'
+        f"Thread:\n{thread_repr}"
+    )
+
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=openai_key)
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=50,
+            temperature=0,
+        )
+        raw = response.choices[0].message.content.strip()
+        raw = re.sub(r'^```json\s*', '', raw)
+        raw = re.sub(r'\s*```$', '', raw)
+        result = json.loads(raw)
+        return result.get("classification", "PROJECT"), float(result.get("confidence", 0.5))
+    except ImportError:
+        return "PROJECT", 0.0
+    except Exception as e:
+        print(f"  Noise filter L2 API error: {e} — defaulting to PROJECT (safe)")
+        return "PROJECT", 0.0
+
+
+def run_noise_filter(threads: list, use_mock: bool = False) -> tuple[list, list[dict]]:
+    """
+    Apply tiered noise filter before Stage A.
+
+    Tier 1 — Heuristic (no LLM, ~90% of noise caught here)
+    Tier 2 — LLM micro-classifier (ambiguous threads only, ~10% of volume)
+
+    All filtered threads are logged and never permanently discarded.
+
+    Returns:
+        project_threads  — threads that passed the filter (passed to Stage A)
+        noise_log        — list of dicts for filtered_noise.json
+    """
+    project_threads = []
+    noise_log = []
+
+    for thread in threads:
+        # ── Tier 1: Heuristic ──
+        is_noise_t1, reason_t1 = is_noise_heuristic(thread)
+        if is_noise_t1:
+            noise_log.append({
+                "thread_id": thread.thread_id,
+                "subject": thread.subject,
+                "project": thread.project,
+                "messages": len(thread.messages),
+                "tier": 1,
+                "classification": "NOISE",
+                "confidence": 1.0,
+                "reason": reason_t1,
+            })
+            print(f"  [Noise L1] {thread.thread_id} excluded: {reason_t1}")
+            continue
+
+        # ── Tier 2: LLM for ambiguous threads ──
+        # Only call L2 if: no technical signals AND ≤2 messages AND unknown project
+        # This targets ~10% of threads as specified in Blueprint Section 1.5
+        all_text = ' '.join(m.body.lower() for m in thread.messages)
+        is_ambiguous = (
+            not any(sig in all_text for sig in TECHNICAL_SIGNALS)
+            and len(thread.messages) <= 2
+            and thread.project == 'Unknown'
+        )
+
+        if is_ambiguous and not use_mock:
+            classification, confidence = is_noise_llm(thread)
+            if classification == "NOISE" and confidence >= 0.75:
+                noise_log.append({
+                    "thread_id": thread.thread_id,
+                    "subject": thread.subject,
+                    "project": thread.project,
+                    "messages": len(thread.messages),
+                    "tier": 2,
+                    "classification": "NOISE",
+                    "confidence": confidence,
+                    "reason": "llm_micro_classifier",
+                })
+                print(f"  [Noise L2] {thread.thread_id} excluded: confidence={confidence:.2f}")
+                continue
+
+        project_threads.append(thread)
+
+    return project_threads, noise_log
+
+
 # ── Stage A: Signal lists (EN + HU, bilingual) ────────────────────────────────
 
 SCOPE_SIGNALS_PRIMARY = [
@@ -664,6 +836,13 @@ def classify_threads(threads_by_project: dict[str, list[EmailThread]],
 
     for project, threads in threads_by_project.items():
         print(f"\n[Stage A] {project} — {len(threads)} threads")
+
+        # Noise filter (before Stage A)
+        filtered_threads, noise_log = run_noise_filter(threads, use_mock)
+        noise_count = len(threads) - len(filtered_threads)
+        if noise_count > 0:
+            print(f"  -> Noise filter: {noise_count} thread(s) excluded, {len(filtered_threads)} remaining")
+        threads = filtered_threads
         threads_by_id = {t.thread_id: t for t in threads}
 
         # Stage A
@@ -684,9 +863,11 @@ def classify_threads(threads_by_project: dict[str, list[EmailThread]],
 
         results[project] = {
             "threads_analyzed": len(threads),
+            "threads_noise_filtered": noise_count,
             "confirmed_flags": confirmed_flags,
             "needs_review": needs_review,
             "cross_thread_patterns": patterns,
+            "noise_log": noise_log,
         }
 
     return results

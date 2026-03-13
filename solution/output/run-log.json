@@ -1,11 +1,14 @@
 {
-  "run_id": "Q2-2025-20260313T073454",
+  "run_id": "Q2-2025-20260313T090234",
   "quarter": "Q2 2025",
   "mode": "live",
-  "started_at": "2026-03-13T07:34:54.806845Z",
-  "completed_at": "2026-03-13T07:41:32.462602Z",
-  "duration_seconds": 397.7,
+  "started_at": "2026-03-13T09:02:34.001369Z",
+  "completed_at": "2026-03-13T09:09:03.613204Z",
+  "duration_seconds": 389.6,
   "stages": {
+    "noise_filter": {
+      "threads_excluded": 1
+    },
     "stage_a": {
       "candidates_total": 15,
       "by_project": {
@@ -14,8 +17,8 @@
       }
     },
     "stage_b": {
-      "confirmed": 8,
-      "needs_review": 7,
+      "confirmed": 7,
+      "needs_review": 8,
       "false_positives": 0,
       "tokens_used": 0
     },

@@ -74,7 +74,7 @@ The DoE currently prepares the QBR by:
 **Primary:** Walk into the QBR fully prepared — no surprises, no "I didn't know about that."
 
 **Secondary:**
-- Spend less than 30 minutes reviewing the pre-generated report before the meeting
+- Spend under 20 minutes reviewing the executive summary; full report available for deep dives
 - Have specific data to back up decisions ("Project X is at risk because...")
 - Identify systemic issues across projects, not just per-project firefighting
 - Trust that the report catches what matters and filters out noise

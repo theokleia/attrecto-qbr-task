@@ -134,7 +134,7 @@ Every flag includes a confidence label: `[Rule+LLM-confirmed]`, `[LLM-confirmed]
     │   ├── ai_classifier.py      # Rule engine + LLM validator (Stages A-C)
     │   └── report_generator.py   # Report generation (Stage D)
     ├── mock_data/
-    │   └── jira_mock.json        # Mock Jira tickets for future Concept B integration
+    │   └── jira_mock.json        # Mock Jira tickets for future Option B integration
     └── output/
         ├── sample-report.md      # Generated report (from sample run)
         └── run-log.json          # Machine-readable run record
@@ -152,7 +152,7 @@ Every flag includes a confidence label: `[Rule+LLM-confirmed]`, `[LLM-confirmed]
 
 **Project detection:** Thread-to-project mapping uses subject line patterns first, then participant email lookup against `Colleagues.txt` team groupings as fallback.
 
-**Jira integration (mock_data):** `jira_mock.json` contains realistic Jira tickets aligned with the email data. Implementing live Jira API ingestion (Concept B architecture) requires `JIRA_BASE_URL` and `JIRA_API_TOKEN` in `.env`.
+**Jira integration (mock_data):** `jira_mock.json` contains realistic Jira tickets aligned with the email data. Implementing live Jira API ingestion (Option B architecture) requires `JIRA_BASE_URL` and `JIRA_API_TOKEN` in `.env`.
 
 ---
 

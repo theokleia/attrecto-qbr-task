@@ -113,9 +113,13 @@ def main():
     for project, threads in corpus.items():
         print(f"    {project}: {len(threads)} threads")
 
-    # Stage A: candidate extraction (inside classify_threads)
-    # Stage B + C
+    # Noise filter + Stages A→B→C
     results = classify_threads(corpus, use_mock=use_mock)
+
+    # ── Noise filter log ──
+    total_noise_filtered = sum(d.get('threads_noise_filtered', 0) for d in results.values())
+    if total_noise_filtered > 0:
+        print(f"[Noise Filter] {total_noise_filtered} thread(s) excluded before Stage A")
 
     # ── Stage A log ──
     total_candidates = sum(
@@ -152,6 +156,17 @@ def main():
     tokens_display = f"{total_tokens} (mock: 0 real)" if use_mock else str(total_tokens)
 
     print(f"[Stage D] Report written → {output_path}")
+
+    # ── Write filtered_noise.json ──
+    all_noise_entries = []
+    for project, d in results.items():
+        all_noise_entries.extend(d.get('noise_log', []))
+    if all_noise_entries:
+        noise_log_path = os.path.join(os.path.dirname(output_path), 'filtered_noise.json')
+        with open(noise_log_path, 'w', encoding='utf-8') as f:
+            json.dump(all_noise_entries, f, indent=2)
+        print(f"[Noise Filter] {len(all_noise_entries)} filtered thread(s) logged → {noise_log_path}")
+
     print(f"[Run complete] Duration: {duration}s | Tokens used: {tokens_display}")
 
     # ── Write run-log.json ──
@@ -171,6 +186,7 @@ def main():
         "completed_at": run_end.isoformat().replace('+00:00', 'Z'),
         "duration_seconds": duration,
         "stages": {
+            "noise_filter": {"threads_excluded": total_noise_filtered},
             "stage_a": {"candidates_total": total_candidates, "by_project": by_project_stage_a},
             "stage_b": {"confirmed": total_confirmed, "needs_review": total_review, "false_positives": total_fp, "tokens_used": total_tokens},
             "stage_c": {"patterns_found": total_patterns},

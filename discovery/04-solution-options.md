@@ -9,7 +9,7 @@
 
 The core problem is the same across all options: a Director of Engineering spends 2–4 hours manually preparing a QBR that should take 20 minutes to review. The options differ in **what data they use** and **how reliably they can detect and validate issues**.
 
-The task brief explicitly required analysis of project email `.txt` files — this determined Option A as the PoC implementation. Options B and C represent the recommended path for a real-world production system.
+The task brief explicitly required analysis of project email `.txt` files — this determined Option A as the PoC implementation. Option D (email-driven Jira population) represents the recommended long-term architectural investment — it fixes the root cause that Options A, B, and C all work around. Once Option D is in place, Option B becomes the natural reporting layer, evolving to Option C at scale.
 
 ---
 
@@ -99,6 +99,48 @@ The task brief explicitly required analysis of project email `.txt` files — th
 
 ---
 
+## Option D: Jira as Single Source of Truth *(The Root Cause Fix)*
+
+**The core idea:** Options A, B, and C all treat Jira incompleteness as a given and work around it. Option D reframes the problem entirely: **establish Jira as the single, authoritative source of truth for project status — and build reporting on top of that foundation.**
+
+This is a strategic recommendation, not a specific technical solution. The mechanism for achieving Jira completeness can vary:
+
+- **Process discipline:** Daily standups with a mandatory rule that every decision, blocker, or scope change raised verbally or by email is entered into Jira before the meeting ends. No automation required — just a culture change enforced by the PM.
+- **AI-assisted automation:** The system monitors the inbox and proposes Jira tickets for human approval when an email contains a decision, issue, or scope change. A reviewer approves or rejects the draft before it is written to Jira.
+- **Hybrid:** Process discipline as the primary mechanism, automation as a safety net that catches what slips through.
+
+The specific path depends on the organisation's maturity, tooling, and appetite for change. What matters is the outcome: **every significant project event lives in Jira, not scattered across email threads.**
+
+| | |
+|---|---|
+| **Goal** | Jira reflects complete project reality — not just what was manually ticketed |
+| **Mechanism** | Process change, AI automation, or hybrid — chosen per client context |
+| **Integration required** | Jira API write access (if automation path chosen) |
+| **Setup complexity** | Low (process only) to High (full automation with review workflow) |
+| **Deployment** | Ongoing discipline or continuous monitor, depending on approach |
+
+**Pros:**
+- Fixes the root cause rather than working around it — Jira incompleteness is eliminated at the source
+- Once Jira is complete, Options B and C become dramatically more reliable — they report from ground truth, not inference
+- Eliminates "ghost issues" — decisions and problems that existed only in email threads and were never visible to the Director
+- The process-discipline path requires zero technical investment and can start immediately
+- The automation path scales without requiring behavioural change from the team
+
+**Cons:**
+- Process discipline requires sustained management commitment — without enforcement it regresses quickly
+- AI automation carries misclassification risk — writing a wrong ticket to Jira is harder to undo than a wrong line in a report
+- Ticket routing logic is non-trivial regardless of mechanism: which project? what issue type? who is the assignee?
+- Requires explicit client sign-off before AI writes to their production Jira
+- Does not replace Options B or C for QBR reporting — it enables them to work correctly
+
+**Relationship to Options B and C:**
+
+Option D is not a replacement for Options B or C — it addresses a different layer of the problem. Options B and C are reporting tools; Option D is about data quality. A reporting tool built on complete Jira data is inherently more reliable than one compensating for its absence. Whether Option B or C is the right reporting layer — and whether automation or process discipline is the right path to Jira completeness — should be grounded in a proper discovery conversation with the client. The actual pain points, team maturity, and appetite for change determine which combination makes sense.
+
+**Best for:** Organisations where poor Jira hygiene is the primary pain point — important decisions are routinely made in meetings or email and never formally recorded. If the client's Jira is already well-maintained, the marginal value of Option D is lower and jumping directly to Option B is the right move.
+
+---
+
 ## Future Vision: Conversational Interface *(Requires Option B or C)*
 
 **"What are the riskiest things in DivatKirály right now?"**
@@ -119,16 +161,16 @@ With Jira as the backbone (Option B) or full multi-source (Option C), every answ
 
 ## Comparison Summary
 
-| Criterion | Option A (Email) | Option B (Jira + Email) | Option C (Multi-source) |
-|-----------|-----------------|------------------------|------------------------|
-| Setup complexity | Low | Medium | High |
-| Data completeness | ~35% | ~70% | ~90% |
-| Resolution accuracy | Inferred | Confirmed | Confirmed |
-| False positive rate | Medium | Low | Low |
-| Continuous operation | Requires extra work | Natural | Natural |
-| Conversational interface | Not suitable | Suitable | Best fit |
-| Est. cost per QBR run | ~$0.05–0.20 (18 threads, ~75K tokens) | ~$0.20–0.80 (email + Jira volume) | Variable — scales with source count |
-| Recommended for | PoC / no-Jira orgs | Production standard | Enterprise |
+| Criterion | Option A (Email) | Option B (Jira + Email) | Option C (Multi-source) | Option D (Email → Jira) |
+|-----------|-----------------|------------------------|------------------------|------------------------|
+| Setup complexity | Low | Medium | High | High |
+| Data completeness | ~35% | ~70% | ~90% | N/A (populates Jira, does not report) |
+| Resolution accuracy | Inferred | Confirmed | Confirmed | N/A (input layer, not reporting layer) |
+| False positive rate | Medium | Low | Low | Critical risk — bad writes to Jira |
+| Continuous operation | Requires extra work | Natural | Natural | Yes — real-time by design |
+| Enables conversational interface | Not suitable | Suitable | Best fit | Yes (via complete Jira in Options B/C) |
+| Est. cost per run | ~$0.05–0.20 (18 threads, ~75K tokens) | ~$0.20–0.80 (email + Jira volume) | Variable — scales with source count | Per-email classification (~$0.001–0.005 per email) |
+| Recommended for | PoC / no-Jira orgs | Production standard | Enterprise | Orgs with low Jira discipline, high email volume |
 
 ---
 
@@ -137,3 +179,5 @@ With Jira as the backbone (Option B) or full multi-source (Option C), every answ
 **Option A** was implemented because the task brief explicitly specified email `.txt` file analysis as the input. The architecture was designed to be source-agnostic so that Options B and C can be built on the same analytical foundation — adding Jira or additional sources requires new ingestion parsers, not changes to Stages A–D.
 
 The mock Jira data (`mock_data/jira_mock.json`) is included to demonstrate what Option B cross-referencing would look like and to validate that the data structures are compatible.
+
+**Option D** was not in scope for this engagement, which was explicitly defined as a QBR reporting tool. However, it represents the recommended long-term architectural investment: fixing Jira completeness at the source rather than compensating for it in the reporting layer. If the client's primary pain point is "we can never trust Jira because half the decisions happen in email," Option D is the correct intervention — Option B or C alone will not solve it.

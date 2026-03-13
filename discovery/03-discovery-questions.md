@@ -92,7 +92,7 @@
 *Impact on solution:* Report generation should be schedulable (cron job or similar). The architecture must support both on-demand and scheduled runs without manual intervention.
 
 **Q38: How will you judge success of the PoC?**
-*Assumed answer:* The PoC is successful if it correctly surfaces the issues a human reviewer would identify in the sample data, with a false negative rate below 20% for high-severity flags. For production: QBR prep time drops from 4 hours to under 30 minutes, and the Director reports at least one issue they would not have caught manually.
+*Assumed answer:* The PoC is successful if it correctly surfaces the issues a human reviewer would identify in the sample data, with a false negative rate below 20% for high-severity flags. For production: QBR prep time drops from 2–4 hours to under 30 minutes, and the Director reports at least one issue they would not have caught manually.
 *Impact on solution:* Success criteria must be agreed before delivery, not after. Without a concrete metric, evaluation is subjective and expectations can shift on the day.
 
 **Q39: Who will validate whether a flagged issue was genuinely important — and when?**
@@ -225,3 +225,31 @@
 **Q20: Should the system integrate with CI/CD or GitHub in addition to Jira and email?**
 *Assumed answer:* Yes — these are natural next integration points. CI/CD failure rates and GitHub PR cycle times are valuable QBR metrics.
 *Impact on solution:* The Blueprint describes these as Phase 2 integrations. The architecture is designed to accept additional data sources without requiring a full rebuild.
+
+---
+
+## Option D: Email-Driven Jira Population *(Discovery Questions)*
+
+**Q-K: Would the client accept AI-proposed tickets requiring human approval before being written to Jira?**
+*Assumed answer:* Yes, if the review step is lightweight (approve/reject a pre-filled draft, not create from scratch). Full auto-write without review will face resistance.
+*Impact on solution:* A review queue UI is required. Auto-write without review is architecturally possible but not recommended until trust is established.
+
+**Q-L: What criteria determine when an email should trigger a new Jira ticket vs. update an existing one vs. be ignored?**
+*Assumed answer:* New ticket if: no matching open issue exists AND email contains an actionable item (bug, blocker, scope request, compliance concern). Update if: a matching open issue is found (by keyword/thread matching). Ignore if: noise, social, or already-resolved.
+*Impact on solution:* The classification rules are the hardest part of Option D. They require a training set of labelled examples from the client's actual email history before the system can be tuned.
+
+**Q-M: How should the system handle the same issue appearing across multiple email threads?**
+*Assumed answer:* Deduplication by semantic similarity + Jira cross-reference. If a ticket already exists that matches the semantic content, update it rather than create a duplicate.
+*Impact on solution:* Requires a similarity check against open Jira issues before every ticket creation. Redis or a lightweight vector search is needed at scale.
+
+**Q-N: What is the correction mechanism when a ticket is auto-created incorrectly?**
+*Assumed answer:* The reviewer rejects it in the review queue; the rejection is logged with a reason; the AI uses rejections as feedback. In the review-queue model, nothing reaches Jira until approved, so rollback is not needed.
+*Impact on solution:* The review queue is not optional — it is the safety mechanism that makes Option D trustworthy enough to deploy.
+
+**Q-O: Who should be the default assignee and reporter for auto-created tickets?**
+*Assumed answer:* Reporter = the email sender (mapped via Colleagues.txt → Jira account). Assignee = unassigned by default, with PM notified to assign. Assigning to the email sender or a wrong team member is worse than leaving it unassigned.
+*Impact on solution:* Identity resolution (already built in `email_parser.py`) must map to Jira account IDs. The `Colleagues.txt` → Jira user mapping is a required configuration step per client.
+
+**Q-P: What Jira project and issue type should auto-created tickets default to, and can this be overridden per email pattern?**
+*Assumed answer:* Default project = derived from email subject/participants (same project detection logic as Stage A). Issue type = Bug for incidents, Task for decisions/scope items, Story for new requirements. Override by configuring per-project routing rules in `.env`.
+*Impact on solution:* Per-project routing configuration is required at onboarding. Without it, all tickets land in a default project, which reduces adoption.
