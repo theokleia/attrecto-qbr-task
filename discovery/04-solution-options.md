@@ -159,21 +159,6 @@ With Jira as the backbone (Option B) or full multi-source (Option C), every answ
 
 ---
 
-## Comparison Summary
-
-| Criterion | Option A (Email) | Option B (Jira + Email) | Option C (Multi-source) | Option D (Email → Jira) |
-|-----------|-----------------|------------------------|------------------------|------------------------|
-| Setup complexity | Low | Medium | High | High |
-| Data completeness | ~35% | ~70% | ~90% | N/A (populates Jira, does not report) |
-| Resolution accuracy | Inferred | Confirmed | Confirmed | N/A (input layer, not reporting layer) |
-| False positive rate | Medium | Low | Low | Critical risk — bad writes to Jira |
-| Continuous operation | Requires extra work | Natural | Natural | Yes — real-time by design |
-| Enables conversational interface | Not suitable | Suitable | Best fit | Yes (via complete Jira in Options B/C) |
-| Est. cost per run | ~$0.05–0.20 (18 threads, ~75K tokens) | ~$0.20–0.80 (email + Jira volume) | Variable — scales with source count | Per-email classification (~$0.001–0.005 per email) |
-| Recommended for | PoC / no-Jira orgs | Production standard | Enterprise | Orgs with low Jira discipline, high email volume |
-
----
-
 ## Decision for This PoC
 
 **Option A** was implemented because the task brief explicitly specified email `.txt` file analysis as the input. The architecture was designed to be source-agnostic so that Options B and C can be built on the same analytical foundation — adding Jira or additional sources requires new ingestion parsers, not changes to Stages A–D.
