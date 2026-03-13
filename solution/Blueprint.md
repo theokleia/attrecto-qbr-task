@@ -90,7 +90,7 @@ Before finalizing the architecture, I analyzed all 18 provided email threads. Se
 | A7 | The PoC operates on batch files, not a live email server integration | Architecture mismatch for production | Known limitation, stated explicitly |
 | A8 | Emails within a single .txt file belong to a single project-level thread grouping | Cross-contamination of analysis | High |
 | A9 | The Colleagues.txt directory is authoritative but not necessarily complete | Role inference failures for unlisted participants (clients, new hires, vendors) | Medium — directory is primary source; inference is labeled fallback |
-| A10 | Prompt content is version-controlled alongside code | Undetected regression when prompts are changed | **Low confidence — this is a gap, not an assumption; see Section 4.5** |
+| A10 | Prompt content is version-controlled alongside code | Undetected regression when prompts are changed | **Low confidence — this is a gap, not an assumption; see Section 4.8** |
 
 ---
 
@@ -771,13 +771,36 @@ For the first three quarterly cycles, each flagged item undergoes a **PM Validat
 
 For flags that are disputed by the PM but involve client impact or delivery timeline, an explicit **escalation path** to the Director's attention (bypassing the PM) should be defined — for example, any FLAG 3 item marked as a false positive by the responsible PM is automatically shown to the Director with both the flag and the PM's dispute reason.
 
-### 4.3 Key Metrics
+### 4.3 Pre-Live Validation Phase
+
+Before the system is used in any real QBR cycle, it must pass through three validation layers in sequence.
+
+**Layer 1: Stage-level fixture testing**
+
+Each LLM stage is tested in isolation against a small set of synthetic or anonymized email threads before end-to-end testing begins. The goal is not statistical validity — it is confidence that prompts are doing what you think they are doing. For Stage A (rule engine) this is deterministic unit testing. For Stages B, C, and D, 8–12 fixture threads are sufficient.
+
+**Layer 2: Golden set end-to-end evaluation**
+
+See Section 4.4. Labels are applied at the flag level, not the thread level — expected flag type, severity, and cross-thread patterns are recorded for each thread. Outputs are scored against an explicit rubric: a severity mismatch of one level counts as partial credit, not failure. Factual fabrication (a flag that cites events not present in the source thread) counts as a hard failure.
+
+**Layer 3: Shadow mode**
+
+Before going live, run the pipeline on 2–3 cycles of real historical email data (past QBR cycles or recent threads) and have the PM or Director review outputs without acting on them. Compare their assessment against the pipeline's outputs. The question to answer: *"Does a human reviewer agree with these outputs often enough to trust the system as a first-pass filter?"* Perfect agreement is not the target — trust as a filter is.
+
+**PoC exit criteria:** The system is ready for live use when:
+- Flag precision > 80% on the golden set
+- Shadow mode correction rate < 20% after two cycles
+- Director confirms the summary saves at least 30 minutes of QBR prep time
+
+---
+
+### 4.4 Key Metrics
 
 | Metric | Measurement | Target |
 |--------|------------|--------|
 | Flag precision | % of flags confirmed as real by PM review | > 80% |
-| Flag recall | % of real issues flagged (measured post-QBR) | > 70% |
-| False positive rate | % of flags marked incorrect by PMs | < 20% |
+| Flag recall | % of real issues flagged (measured post-QBR via correction log) | > 70% |
+| False positive rate | % of flags dismissed in correction log | < 20% |
 | Noise filter false exclusion | % of filtered threads with project-relevant content | < 5% |
 | Cross-thread pattern precision | % of cross-thread patterns confirmed by PMs | > 60% |
 | "Needs Review" resolution rate | % of review-queue items resolved by PMs before QBR | > 85% |
@@ -785,15 +808,77 @@ For flags that are disputed by the PM but involve client impact or delivery time
 | JSON schema failure rate | Prompt drift detection | Alert at > 5% |
 | API error rate | Model instability detection | Alert at > 2% |
 
-### 4.4 Golden Test Set & Drift Detection
+---
 
-**Composition:** 12–15 email threads with manually labeled expected outputs covering high-confidence positives, high-confidence negatives, and edge cases.
+### 4.5 Live Feedback Collection — Correction Log
 
-**Governance:** Named owner (designated BA or technical PM). Updated quarterly. New production edge cases added within one cycle. **Version-locked to prompt versions** — this is critical: if a prompt is changed, the test set must be re-run against the new prompt and a new baseline recorded. A golden test set that is not version-locked to its prompts detects nothing reliable.
+Once in production, ground truth is collected through a structured **correction log** maintained per QBR cycle. This is the mechanism that makes the metrics in Section 4.4 measurable in a live system.
+
+**What the correction log captures:**
+
+```json
+{
+  "cycle": "Q2 2025",
+  "dismissed_flags": [
+    {
+      "flag_id": "email11-STALLED_DECISION",
+      "reason": "not_actionable | wrong_severity | factually_wrong"
+    }
+  ],
+  "added_flags": [
+    {
+      "description": "Payment gateway delay never surfaced in email — raised verbally in standup",
+      "type": "STALLED_DECISION",
+      "thread_source": "not in email corpus"
+    }
+  ],
+  "severity_corrections": [
+    {
+      "flag_id": "email16-STALLED_DECISION",
+      "original": "LOW",
+      "corrected": "MEDIUM"
+    }
+  ]
+}
+```
+
+**Why the `added_flags` field matters:** The assumption "everything the pipeline did not flag was correctly unlabelled" holds for false positives but is blind to false negatives. The PM will not know what the pipeline missed unless there is an explicit mechanism for them to record it. `added_flags` is how recall degradation is detected over time — without it, the feedback loop optimises precision only and misses are invisible.
+
+**Review cadence:** After each QBR cycle, a 15-minute correction log review with the PM produces three outputs: correction rate per flag type (any type with >30% correction rate triggers prompt review), a delta from the previous cycle (is the system improving or degrading?), and new edge cases added to the golden set.
+
+---
+
+### 4.6 LLM-as-Judge
+
+A separate LLM evaluation pass is appropriate for the subjective quality dimensions of this pipeline that are expensive to hand-label at scale — specifically Stage C (cross-thread pattern quality) and Stage D (executive summary coherence and completeness).
+
+**What the judge evaluates:**
+
+```
+Input:  source email thread(s) + pipeline output for that stage
+Task:   Score on three dimensions (1–5 with one-sentence justification each):
+        1. Factual grounding — does every claim appear in the source material?
+        2. Severity calibration — is the assigned severity consistent with the described events?
+        3. Actionability — could a Director act on this without reading the source?
+```
+
+**What the judge does NOT replace:** Stage B classification accuracy is measured against the golden set, not by a judge. Using an LLM judge on classification outputs introduces a second layer of model variance that obscures signal rather than clarifying it. The judge is for reasoning quality and coherence — not for confirming whether a flag type was correctly assigned.
+
+**Calibration requirement:** Before trusting judge scores as automated monitoring, run the judge against the golden set and compare its scores to human labels on at least 20 examples. If the judge systematically disagrees with human labels, recalibrate the judge prompt before use. LLM judges are consistent but not necessarily correct — cross-validation against human scores is mandatory before treating judge output as ground truth.
+
+**Model:** A more capable model than the pipeline itself (claude-opus-4-6 or equivalent) should be used as the judge to avoid self-evaluation bias.
+
+---
+
+### 4.7 Golden Test Set & Drift Detection
+
+**Composition:** 12–15 email threads with manually labeled expected outputs covering high-confidence positives, high-confidence negatives, and edge cases. Labels are applied at the flag level (type, severity, expected cross-thread patterns) with explicit rubric scoring criteria.
+
+**Governance:** Named owner (designated BA or technical PM). Updated quarterly — new production edge cases from the correction log are added within one cycle. **Version-locked to prompt versions:** if a prompt is changed, the test set must be re-run against the new prompt and a new baseline recorded before the change reaches production.
 
 **Drift alert:** If accuracy drops > 10% from the version-locked baseline, the maintenance owner is alerted. Production report generation continues but the report includes a system accuracy warning.
 
-### 4.5 Prompt Versioning — Acknowledged Gap
+### 4.8 Prompt Versioning — Acknowledged Gap
 
 This blueprint does not define a prompt versioning strategy. Prompts are code: changing them without version control creates silent regressions. A production deployment requires:
 
@@ -804,7 +889,7 @@ This blueprint does not define a prompt versioning strategy. Prompts are code: c
 
 This is explicitly flagged as a production readiness gap not addressed in the PoC.
 
-### 4.6 Pipeline Observability
+### 4.9 Pipeline Observability
 
 A pipeline that fails silently is worse than a pipeline that fails loudly. The most dangerous failure mode is not a crash — it is a successful-looking run that produces an empty or incomplete report because a stage produced zero outputs without surfacing a warning.
 
