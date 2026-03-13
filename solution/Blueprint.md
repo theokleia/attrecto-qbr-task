@@ -857,32 +857,29 @@ The run log enables: audit trails, regression detection (flag count drops betwee
 
 ## Section 5 — Architectural Risk & Mitigation
 
-### 5.1 Low-Probability, High-Impact Risk: Context Collapse
+### 5.1 Primary Risk: Unstructured Input Undermining the Value Proposition
 
-**Likelihood in practice: Low.** Modern LLMs used in this pipeline (claude-sonnet-4-6, gpt-5-nano) have context windows of 128k–200k tokens. A typical email thread — even a long one spanning weeks with 50+ messages — sits well within 20,000–30,000 tokens. Context overflow from a single email thread is not a realistic failure mode under normal operating conditions.
+**The core tension:** The system takes unstructured, informal data (email threads) and produces structured, actionable outputs (confirmed flags, severity ratings, recommended actions). The risk is not that this is impossible — the pipeline demonstrates it is feasible. The risk is that **the signal quality of email is structurally limited**, and that limitation directly threatens the system's primary value proposition.
 
-**Why it remains worth noting:** If it did occur — for example in an unusually long multi-party thread, or if the system were extended to include document attachments — truncation would produce **confident-but-wrong analysis**: worse than no analysis, because it generates authoritative-sounding incorrect information. This would compound the over-trust failure mode (see Section 5.3) in a particularly dangerous way.
+Email captures an incomplete and informal picture of project reality. Decisions get made in standups and never written down. Blockers get resolved in Slack before they surface in email. Scope changes are agreed verbally and only referenced obliquely later. The system can only surface what is in the data it receives — it cannot detect what was never written.
 
-**Scale mitigation — RAG-based retrieval (recommended for production):**
+**How this manifests in practice:**
 
-```
-Per-project email store
-        │
-        ├──► Vector database (pgvector / Qdrant / Pinecone)
-        │    [Each email: date + sender + subject + body excerpt embedded]
-        │
-        └──► Rule engine on metadata (dates, senders, subjects)
-             — does NOT require full body for candidate detection
-                     │
-                     ▼
-             LLM retrieves only relevant emails via vector query
-             per specific analysis question
-             [Never processes full corpus at once]
-```
+- **Too many low-confidence items.** When the source data is ambiguous, the LLM correctly expresses uncertainty — routing items to the "Needs PM Review" queue rather than confirming or rejecting them. If the queue grows large enough, the Director and PMs spend more time validating flags than they would have spent preparing the QBR manually. At that point the system has failed on its own terms, even if every individual decision it made was correct.
 
-This architecture makes the system robust even if corpora grow significantly (multi-year history, document attachments, large teams). It is not required for the current PoC use case.
+- **False positives and false negatives.** A false positive wastes the Director's attention and erodes trust in the system. A false negative — a real risk that never surfaced because it existed only in Slack or a meeting room — is actively harmful because the Director's confidence in the report's completeness is misplaced. Both failure modes are harder to control when the input is unstructured.
 
-**For the PoC:** In-memory simplified approach — Stage B summaries grouped per project, submitted to Stage C. Demonstrates the pattern without vector infrastructure. Context limits are not a concern at this scale.
+**Mitigation:**
+
+The hybrid rule-engine + LLM architecture is specifically designed to limit these failure modes: deterministic rules ensure the LLM only processes candidates that already have structural signal, and the confidence threshold routes uncertain outputs to review rather than surfacing them as confirmed. But these are noise-reduction measures, not a solution to the underlying data quality problem.
+
+The structural solution is Option B or Option D (see discovery document): replacing or augmenting email with a structured source of truth (Jira) eliminates the root cause. With confirmed ticket status as the backbone, resolution is verified rather than inferred, and the false positive rate drops significantly.
+
+**For the PoC:** The provided email sample is intentionally dense with flaggable content, which means the system performs well on it. In a real deployment with a broader mix of routine threads, the noise filter and rule engine will exclude more, and the Needs PM Review queue will be smaller. This is expected and healthy behaviour — but it should be validated against real client data before production deployment.
+
+**Secondary risk: Context window limits**
+
+Modern LLMs (claude-sonnet-4-6, gpt-5-nano) have context windows of 128k–200k tokens. A typical email thread sits well within 20,000–30,000 tokens, so context overflow is not a realistic failure mode at current scale. It becomes relevant if the system is extended to include document attachments or multi-year thread histories — in those cases, truncation would produce confident-but-wrong analysis, which is worse than no analysis. The RAG-based architecture described in the scale path (vector database per project, LLM retrieves only relevant emails per query) eliminates this risk entirely and is the recommended production architecture.
 
 ### 5.2 Batch/Continuous Duality — Honest Assessment of the Gap
 
