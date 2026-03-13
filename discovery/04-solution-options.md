@@ -9,7 +9,7 @@
 
 The core problem is the same across all options: a Director of Engineering spends 2–4 hours manually preparing a QBR that should take 20 minutes to review. The options differ in **what data they use** and **how reliably they can detect and validate issues**.
 
-The task brief explicitly required analysis of project email `.txt` files — this determined Option A as the PoC implementation. Option D (email-driven Jira population) represents the recommended long-term architectural investment — it fixes the root cause that Options A, B, and C all work around. Once Option D is in place, Option B becomes the natural reporting layer, evolving to Option C at scale.
+The task brief explicitly required analysis of project email `.txt` files — this determined Option A as the PoC implementation. Option D (establishing Jira as a reliable single source of truth) represents the recommended long-term architectural investment — it fixes the root cause that Options A, B, and C all work around. Once Option D is in place, Option C becomes the natural reporting layer.
 
 ---
 
@@ -42,32 +42,43 @@ The task brief explicitly required analysis of project email `.txt` files — th
 
 ---
 
-## Option B: Jira-First + Email as Exception Layer *(Recommended for Production)*
+## Option B: Extraction-First Email Architecture *(Email-Based Production Approach)*
 
-**How it works:** Jira is the authoritative data source. The system pulls ticket status, sprint data, and issue history via the Jira API. Email analysis runs in parallel as an **exception detector** — surfacing issues that exist only in email and never made it into a ticket. The two sources are cross-referenced: a flag found in email is validated against Jira before surfacing to the Director.
+**How it works:** Before any analysis, each email is processed by an LLM to extract a structured representation: questions asked, decisions pending, action items assigned, scope references, incidents, named participants, dates, and resolution signals. Downstream analysis — flag detection, staleness calculation, cross-thread pattern matching — operates on this clean structured JSON rather than raw email text.
+
+```
+raw email → LLM extraction → structured JSON per email
+                                        │
+                          deterministic rule engine
+                          (staleness, scope signals,
+                           incident patterns)
+                                        │
+                              LLM cross-thread analysis
+                                        │
+                                    report
+```
 
 | | |
 |---|---|
-| **Data source** | Jira (primary) + email threads (exception layer) |
-| **Integration required** | Jira API credentials (`JIRA_BASE_URL`, `JIRA_API_TOKEN`) |
-| **Setup complexity** | Moderate — API setup per client instance |
-| **Deployment** | Scheduled job or event-driven pipeline |
+| **Data source** | Project email threads |
+| **Integration required** | None — same file input as Option A |
+| **Setup complexity** | Low — same deployment as Option A |
+| **Deployment** | Standalone script or scheduled job |
 
 **Pros:**
-- Jira is already where engineers work — no behavioral change required from the team
-- Resolution status is confirmed, not inferred — "closed" means closed
-- Dramatically reduces false positives: email flags cross-referenced against ticket state
-- Supports continuous operation naturally (Jira webhooks or polling)
-- Detects the most critical failure mode: **issues that exist only in email, never ticketed**
-- Higher Director confidence — every flag has a Jira ticket or a documented absence of one
+- Cleaner separation of concerns: LLM does understanding, rules do analysis, each layer is independently testable
+- Better recall on non-English content — Hungarian "megnézem" vs "megoldva" is handled in context, not via keyword lists
+- Better precision on scope signals — "while I'm in there" is classified correctly only when surrounding context is a change request
+- Simpler validation logic — instead of validating a heuristic candidate, Stage B aggregates pre-extracted structured data
+- Extraction schema is explicit and auditable — the system's "understanding" of each email is visible and correctable
 
 **Cons:**
-- Requires Jira API access per client (onboarding effort)
-- Jira data quality depends on team discipline — unmaintained boards produce noise
-- Does not capture communication outside Jira and email (Slack, verbal, standup notes)
-- Jira-only analysis misses the semantic content: *why* something is stalled, not just *that* it is
+- Higher LLM cost — every email is processed, not just rule-detected candidates; at 3,000 emails per quarter this is meaningful (mitigated by using a smaller extraction model, Haiku-class)
+- Extraction errors become upstream errors — a missed question in extraction means it never gets flagged; requires a golden test set at the extraction layer
+- Schema design is critical and non-trivial — the extraction schema determines what the system can and cannot detect; changing it requires re-extracting historical data
+- Same data completeness ceiling as Option A — email still captures only a partial picture of project reality
 
-**Best for:** Production deployment at software agencies already using Jira as their primary project management tool (which is the majority).
+**Best for:** Organisations where email is the primary communication channel and a Jira integration is not feasible. The correct email-native production architecture when Option A's hybrid heuristics are not precise enough.
 
 ---
 
@@ -135,13 +146,13 @@ The specific path depends on the organisation's maturity, tooling, and appetite 
 
 **Relationship to Options B and C:**
 
-Option D is not a replacement for Options B or C — it addresses a different layer of the problem. Options B and C are reporting tools; Option D is about data quality. A reporting tool built on complete Jira data is inherently more reliable than one compensating for its absence. Whether Option B or C is the right reporting layer — and whether automation or process discipline is the right path to Jira completeness — should be grounded in a proper discovery conversation with the client. The actual pain points, team maturity, and appetite for change determine which combination makes sense.
+Option D is not a replacement for Options B or C — it addresses a different layer of the problem. Options A and B both have the same data completeness ceiling: they can only surface what exists in email. Option D raises that ceiling by ensuring decisions and blockers are recorded in a structured system before analysis begins. Option C integrates that structured data directly. Whether Option B or C is the right reporting layer — and whether automation or process discipline is the right path to data completeness — should be grounded in a proper discovery conversation with the client.
 
 **Best for:** Organisations where poor Jira hygiene is the primary pain point — important decisions are routinely made in meetings or email and never formally recorded. If the client's Jira is already well-maintained, the marginal value of Option D is lower and jumping directly to Option B is the right move.
 
 ---
 
-## Future Vision: Conversational Interface *(Requires Option B or C)*
+## Future Vision: Conversational Interface *(Requires Option C)*
 
 **"What are the riskiest things in DivatKirály right now?"**
 
@@ -149,11 +160,11 @@ The analytical engine in Options B and C produces structured data at every stage
 
 This is the logical end state — not a replacement for the QBR report, but an always-on intelligence layer the Director can query between quarters.
 
-**Why this requires Option B or C, not Option A:**
+**Why this requires Option C, not Options A or B:**
 
-A conversational interface is only as useful as the data behind it. Email-only analysis gives the Director incomplete, inferred, and potentially stale information. Telling a Director "this decision appears stalled based on email thread patterns" is useful in a quarterly report. Having them ask "is the payment gateway issue resolved?" and receiving an uncertain, email-inferred answer is not useful — it erodes trust faster than it builds it.
+A conversational interface is only as useful as the data behind it. Options A and B are both email-based — they give the Director incomplete, inferred, and potentially stale information. Telling a Director "this decision appears stalled based on email thread patterns" is useful in a quarterly report. Having them ask "is the payment gateway issue resolved?" and receiving an uncertain, email-inferred answer is not useful — it erodes trust faster than it builds it.
 
-With Jira as the backbone (Option B) or full multi-source (Option C), every answer is grounded in authoritative, real-time data. The conversational layer becomes a genuine productivity tool, not a sophisticated approximation.
+With Jira integrated as the backbone (Option C), every answer is grounded in authoritative, real-time data. The conversational layer becomes a genuine productivity tool, not a sophisticated approximation.
 
 **Architecture note:** The pipeline already produces structured JSON at every stage (Stages A–C). Adding a conversational layer requires changes only to the presentation layer — not to the analytical engine. The groundwork is in place.
 
@@ -163,6 +174,6 @@ With Jira as the backbone (Option B) or full multi-source (Option C), every answ
 
 **Option A** was implemented because the task brief explicitly specified email `.txt` file analysis as the input. The architecture was designed to be source-agnostic so that Options B and C can be built on the same analytical foundation — adding Jira or additional sources requires new ingestion parsers, not changes to Stages A–D.
 
-The mock Jira data (`mock_data/jira_mock.json`) is included to demonstrate what Option B cross-referencing would look like and to validate that the data structures are compatible.
+The mock Jira data (`mock_data/jira_mock.json`) is included to demonstrate what Option C multi-source integration would look like and to validate that the data structures are compatible.
 
 **Option D** was not in scope for this engagement, which was explicitly defined as a QBR reporting tool. However, it represents the recommended long-term architectural investment: fixing Jira completeness at the source rather than compensating for it in the reporting layer. If the client's primary pain point is "we can never trust Jira because half the decisions happen in email," Option D is the correct intervention — Option B or C alone will not solve it.

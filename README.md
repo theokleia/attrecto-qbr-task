@@ -15,7 +15,7 @@ The brief asks for a system that mines project emails to generate a QBR health r
 Before writing a line of code, I spent time mapping out the full solution landscape:
 
 - **Option A (what was asked):** Email-only analysis — low friction, zero dependencies, directly addresses the brief. ✅ Implemented as the PoC.
-- **Option B (reporting layer):** Jira-first + email as exception layer — confirms resolution status from authoritative data, dramatically reduces false positives.
+- **Option B (email-native production):** Extraction-first architecture — LLM extracts structured data from each email before analysis, giving deterministic rules cleaner signal and better recall on ambiguous or non-English content.
 - **Option C (enterprise path):** Multi-source intelligence — Jira + email + Git + Slack, full portfolio visibility.
 - **Option D (where I'd start the engagement — discovery determines the path forward):** Establish Jira as the single source of truth for project status. The mechanism is secondary — it could be process discipline (decisions made in email or meetings get ticketed before end of day), AI-assisted automation (inbox monitoring that proposes Jira tickets for human approval), or a hybrid. The goal is a reliable data foundation; what gets built on top of it depends on what discovery reveals.
 
@@ -47,7 +47,7 @@ The deliberation and reasoning behind each option is documented in [`discovery/0
     │   ├── report_generator.py  # Stage D — renders the Markdown QBR report
     │   └── analyzer.py          # Entry point — wires the pipeline, CLI interface
     ├── mock_data/
-    │   └── jira_mock.json       # Mock Jira data — demonstrates Option B data structure
+    │   └── jira_mock.json       # Mock Jira data — demonstrates Option C multi-source data structure
     ├── output/
     │   ├── sample-report.md     # Live run output against the 18 provided email files
     │   ├── run-log.json         # Machine-readable run record

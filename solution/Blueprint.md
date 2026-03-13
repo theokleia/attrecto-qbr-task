@@ -958,7 +958,7 @@ Email captures an incomplete and informal picture of project reality. Decisions 
 
 The hybrid rule-engine + LLM architecture is specifically designed to limit these failure modes: deterministic rules ensure the LLM only processes candidates that already have structural signal, and the confidence threshold routes uncertain outputs to review rather than surfacing them as confirmed. But these are noise-reduction measures, not a solution to the underlying data quality problem.
 
-The structural solution is Option B or Option D (see discovery document): replacing or augmenting email with a structured source of truth (Jira) eliminates the root cause. With confirmed ticket status as the backbone, resolution is verified rather than inferred, and the false positive rate drops significantly.
+The structural solution is Option C or Option D (see discovery document): replacing or augmenting email with a structured source of truth (Jira) eliminates the root cause. With confirmed ticket status as the backbone, resolution is verified rather than inferred, and the false positive rate drops significantly.
 
 **For the PoC:** The provided email sample is intentionally dense with flaggable content, which means the system performs well on it. In a real deployment with a broader mix of routine threads, the noise filter and rule engine will exclude more, and the Needs PM Review queue will be smaller. This is expected and healthy behaviour — but it should be validated against real client data before production deployment.
 

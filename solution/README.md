@@ -134,7 +134,7 @@ Every flag includes a confidence label: `[Rule+LLM-confirmed]`, `[LLM-confirmed]
     │   ├── ai_classifier.py      # Rule engine + LLM validator (Stages A-C)
     │   └── report_generator.py   # Report generation (Stage D)
     ├── mock_data/
-    │   └── jira_mock.json        # Mock Jira tickets for future Option B integration
+    │   └── jira_mock.json        # Mock Jira tickets for future Option C integration
     └── output/
         ├── sample-report.md      # Generated report (from sample run)
         └── run-log.json          # Machine-readable run record
@@ -152,7 +152,7 @@ Every flag includes a confidence label: `[Rule+LLM-confirmed]`, `[LLM-confirmed]
 
 **Project detection:** Thread-to-project mapping uses subject line patterns first, then participant email lookup against `Colleagues.txt` team groupings as fallback.
 
-**Jira integration (mock_data):** `jira_mock.json` is a design artifact only — it is not read by the current PoC implementation. It contains realistic Jira tickets aligned with the email data to illustrate the data structure that Option B would consume. Implementing live Jira API ingestion (Option B architecture) requires `JIRA_BASE_URL` and `JIRA_API_TOKEN` in `.env`.
+**Jira integration (mock_data):** `jira_mock.json` is a design artifact only — it is not read by the current PoC implementation. It contains realistic Jira tickets aligned with the email data to illustrate the data structure that Option C multi-source architecture would consume. Implementing live Jira API ingestion (Option C multi-source architecture) requires `JIRA_BASE_URL` and `JIRA_API_TOKEN` in `.env`.
 
 ---
 
@@ -167,6 +167,6 @@ As documented in the Blueprint:
 - `acknowledged_items.json` suppression mechanism is not implemented in this version
 - Project-to-team mapping from `Colleagues.txt` uses positional group ordering calibrated for the provided sample data — a production implementation would require a configurable mapping
 
-- The text-based pipeline produces a higher proportion of low-confidence items than a structured-source implementation would. In production, this is addressed by integrating a structured source of truth (Option B — Jira as primary input).
+- The text-based pipeline produces a higher proportion of low-confidence items than a structured-source implementation would. In production, this is addressed by moving to an extraction-first architecture (Option B) or integrating a structured source of truth such as Jira (Option C).
 
 These are explicitly flagged as production readiness gaps, not oversights.
