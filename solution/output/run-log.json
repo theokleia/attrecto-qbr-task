@@ -1,32 +1,32 @@
 {
-  "run_id": "Q2-2025-20260313T090234",
+  "run_id": "Q2-2025-20260313T120742",
   "quarter": "Q2 2025",
   "mode": "live",
-  "started_at": "2026-03-13T09:02:34.001369Z",
-  "completed_at": "2026-03-13T09:09:03.613204Z",
-  "duration_seconds": 389.6,
+  "started_at": "2026-03-13T12:07:42.216708Z",
+  "completed_at": "2026-03-13T12:13:53.384411Z",
+  "duration_seconds": 371.2,
   "stages": {
     "noise_filter": {
       "threads_excluded": 1
     },
     "stage_a": {
-      "candidates_total": 15,
+      "candidates_total": 38,
       "by_project": {
-        "Project Phoenix": 5,
-        "DivatKir\u00e1ly": 10
+        "Project Phoenix": 10,
+        "DivatKir\u00e1ly": 28
       }
     },
     "stage_b": {
-      "confirmed": 7,
-      "needs_review": 8,
-      "false_positives": 0,
-      "tokens_used": 0
+      "confirmed": 8,
+      "needs_review": 7,
+      "false_positives": 23,
+      "tokens_used": 66793
     },
     "stage_c": {
-      "patterns_found": 0
+      "patterns_found": 5
     },
     "stage_d": {
-      "output_path": "output/sample-report.md",
+      "output_path": "output\\sample-report.md",
       "projects_in_report": 2
     }
   },

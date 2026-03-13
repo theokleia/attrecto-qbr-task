@@ -676,10 +676,10 @@ def mock_stage_b(candidate: Candidate, thread: 'EmailThread' = None) -> dict:
 
 def run_stage_b(candidates: list[Candidate],
                 threads_by_id: dict[str, EmailThread],
-                use_mock: bool = False) -> tuple[list[ConfirmedFlag], list[ConfirmedFlag]]:
+                use_mock: bool = False) -> tuple[list[ConfirmedFlag], list[ConfirmedFlag], list[ConfirmedFlag], int]:
     """
     Validate each candidate with LLM or mock.
-    Returns: (confirmed_flags, needs_review_flags)
+    Returns: (confirmed_flags, needs_review_flags, false_positive_flags, tokens_used)
     """
     confirmed = []
     needs_review = []
