@@ -54,8 +54,8 @@ def main():
                         help='Use mock LLM responses (no API key required)')
     parser.add_argument('--output', default=None,
                         help='Output path for the report Markdown file')
-    parser.add_argument('--quarter', default='Q2 2025',
-                        help='Quarter label for the report header (default: Q2 2025)')
+    parser.add_argument('--quarter', default=None,
+                        help='Quarter label for the report header (e.g. "Q2 2025"). Defaults to current quarter derived from ANALYSIS_REFERENCE_DATE.')
     args = parser.parse_args()
 
     # ── Resolve paths ──
@@ -87,6 +87,12 @@ def main():
         if os.path.exists(env_path):
             load_env_file(env_path)
             break
+
+    # Compute quarter label after env is loaded (ANALYSIS_REFERENCE_DATE may be in .env)
+    if args.quarter is None:
+        from ai_classifier import get_reference_date
+        ref = get_reference_date()
+        args.quarter = f"Q{(ref.month - 1) // 3 + 1} {ref.year}"
 
     use_mock = args.mock
     if not use_mock and not os.environ.get('ANTHROPIC_API_KEY'):
@@ -140,7 +146,7 @@ def main():
         print("[WARNING] Zero confirmed flags — verify with PMs that this reflects actual project health.")
 
     # ── Stage C log ──
-    total_patterns = sum(len(d.get('cross_project_patterns', [])) for d in results.values())
+    total_patterns = sum(len(d.get('cross_thread_patterns', [])) for d in results.values())
     print(f"[Stage C] {total_patterns} cross-project pattern(s) detected")
 
     # Stage D: Report
@@ -171,6 +177,8 @@ def main():
 
     # ── Write run-log.json ──
     run_id = f"{args.quarter.replace(' ', '-')}-{run_start.strftime('%Y%m%dT%H%M%S')}"
+    solution_dir = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+    relative_output_path = os.path.relpath(output_path, solution_dir)
     by_project_stage_a = {
         p: len(d.get('confirmed_flags', [])) + len(d.get('needs_review', [])) + len(d.get('false_positives', []))
         for p, d in results.items()
@@ -190,7 +198,7 @@ def main():
             "stage_a": {"candidates_total": total_candidates, "by_project": by_project_stage_a},
             "stage_b": {"confirmed": total_confirmed, "needs_review": total_review, "false_positives": total_fp, "tokens_used": total_tokens},
             "stage_c": {"patterns_found": total_patterns},
-            "stage_d": {"output_path": output_path, "projects_in_report": len(results)},
+            "stage_d": {"output_path": relative_output_path, "projects_in_report": len(results)},
         },
         "warnings": warnings,
         "errors": [],

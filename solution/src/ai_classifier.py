@@ -21,7 +21,7 @@ from email_parser import EmailThread, EmailMessage
 STALLED_THRESHOLD_DAYS = int(os.environ.get('STALLED_THRESHOLD_DAYS', '5'))
 CONFIDENCE_THRESHOLD = float(os.environ.get('CONFIDENCE_THRESHOLD', '0.70'))
 # Reference date for "days open" calculation. Defaults to last day of current quarter.
-# Override with ANALYSIS_REFERENCE_DATE env var (YYYY-MM-DD) or --date CLI arg.
+# Override with ANALYSIS_REFERENCE_DATE env var (YYYY-MM-DD).
 def get_reference_date() -> datetime:
     """
     Returns the analysis reference date. Evaluated at call time (not import time)
@@ -114,7 +114,7 @@ def is_noise_llm(thread: 'EmailThread') -> tuple[str, float]:
     if not openai_key:
         return "PROJECT", 0.0
 
-    model = os.environ.get('MICRO_CLASSIFIER_MODEL', 'gpt-4o-mini')
+    model = os.environ.get('MICRO_CLASSIFIER_MODEL', 'gpt-5-nano')
 
     # Build compact thread text (cap at 5 messages × 300 chars to limit tokens)
     parts = []
@@ -568,16 +568,16 @@ Return ONLY valid JSON — no markdown, no preamble:
 }}"""
 
 
-def call_llm(prompt: str) -> Optional[dict]:
+def call_llm(prompt: str) -> tuple[Optional[dict], int]:
     """
     Call Claude Sonnet 4.6 via Anthropic API.
-    Returns parsed JSON dict or None on failure.
+    Returns (parsed_json_dict, tokens_used). tokens_used is 0 on failure.
     """
     try:
         import anthropic
         api_key = os.environ.get('ANTHROPIC_API_KEY')
         if not api_key:
-            return None
+            return None, 0
 
         client = anthropic.Anthropic(api_key=api_key)
         response = client.messages.create(
@@ -587,18 +587,19 @@ def call_llm(prompt: str) -> Optional[dict]:
             messages=[{"role": "user", "content": prompt}],
         )
         raw = response.content[0].text.strip()
+        tokens = response.usage.input_tokens + response.usage.output_tokens
 
         # Strip markdown code fences if present
         raw = re.sub(r'^```json\s*', '', raw)
         raw = re.sub(r'\s*```$', '', raw)
 
-        return json.loads(raw)
+        return json.loads(raw), tokens
 
     except ImportError:
-        return None
+        return None, 0
     except Exception as e:
         print(f"  LLM API error: {e}")
-        return None
+        return None, 0
 
 
 def mock_stage_b(candidate: Candidate, thread: 'EmailThread' = None) -> dict:
@@ -683,6 +684,7 @@ def run_stage_b(candidates: list[Candidate],
     confirmed = []
     needs_review = []
     false_positives = []
+    stage_tokens = 0
 
     for candidate in candidates:
         thread = threads_by_id.get(candidate.thread_id)
@@ -693,7 +695,8 @@ def run_stage_b(candidates: list[Candidate],
             result = mock_stage_b(candidate, thread)
         else:
             prompt = build_stage_b_prompt(candidate, thread)
-            result = call_llm(prompt)
+            result, tokens = call_llm(prompt)
+            stage_tokens += tokens
             if result is None:
                 # API failed — route to needs_review
                 result = mock_stage_b(candidate)
@@ -734,7 +737,7 @@ def run_stage_b(candidates: list[Candidate],
             confirmed.append(flag)
             print(f"  ✓ Confirmed [{candidate.thread_id}] {flag.flag_type} — {flag.severity}")
 
-    return confirmed, needs_review
+    return confirmed, needs_review, false_positives, stage_tokens
 
 
 # ── Stage C: Cross-thread pattern analysis ────────────────────────────────────
@@ -794,7 +797,7 @@ Return ONLY valid JSON:
 ALL VALIDATED FLAG SUMMARIES FOR PROJECT "{project}":
 {json.dumps(flag_summaries, indent=2)}"""
 
-    result = call_llm(prompt)
+    result, _ = call_llm(prompt)
     if result:
         return result.get("cross_thread_patterns", [])
     return _mock_stage_c(confirmed_flags, project)
@@ -851,7 +854,7 @@ def classify_threads(threads_by_project: dict[str, list[EmailThread]],
 
         # Stage B
         print(f"[Stage B] Validating {len(candidates)} candidates...")
-        confirmed_flags, needs_review = run_stage_b(candidates, threads_by_id, use_mock)
+        confirmed_flags, needs_review, false_positives, tokens_used = run_stage_b(candidates, threads_by_id, use_mock)
 
         # Stage C
         print(f"[Stage C] Cross-thread patterns for {project}...")
@@ -866,6 +869,8 @@ def classify_threads(threads_by_project: dict[str, list[EmailThread]],
             "threads_noise_filtered": noise_count,
             "confirmed_flags": confirmed_flags,
             "needs_review": needs_review,
+            "false_positives": false_positives,
+            "tokens_used": tokens_used,
             "cross_thread_patterns": patterns,
             "noise_log": noise_log,
         }

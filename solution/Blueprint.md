@@ -444,8 +444,8 @@ def is_substantive_response_to_any(question, later_messages):
     if any(sig in full_response_text for sig in RESOLUTION_SIGNALS):
         return True   # Resolved — do not generate candidate
     
-    if all(ack in full_response_text for ack in ACKNOWLEDGMENT_ONLY 
-           and not any(sig in full_response_text for sig in RESOLUTION_SIGNALS)):
+    has_ack = any(ack in full_response_text for ack in ACKNOWLEDGMENT_ONLY)
+    if has_ack and not any(sig in full_response_text for sig in RESOLUTION_SIGNALS):
         return False  # Only acknowledgments — still stalled
     
     # Stage 2: Ambiguous — use LLM mini-call to decide
@@ -663,17 +663,22 @@ ALL VALIDATED FLAG SUMMARIES FOR THIS PROJECT:
 
 ### 2.6 Stage D: Portfolio Report Generator
 
-**Model:** `claude-sonnet-4-6` (default; configurable via .env)
+**Implementation note:** Stage D uses deterministic Markdown rendering for all structured sections (flags, patterns, limitations). The LLM is called only to generate the Executive Summary narrative (2–3 sentences), where its ability to synthesise across projects adds clear value. All other sections are built from structured JSON output of Stages A–C, ensuring the report structure is fully predictable and reproducible across runs.
+
+**Model:** `claude-sonnet-4-6` (default; configurable via .env) — Executive Summary only
 **Temperature:** 0
 
-**Prompt:**
+**Executive Summary prompt:**
 
 ```
 You are preparing a QBR Portfolio Health Report for a Director of Engineering.
 This Director is technical, time-constrained, and needs to make fast, accurate decisions.
 
+Write ONLY the Executive Summary section (2-3 sentences): portfolio health overview and single most critical concern.
+Be direct. No filler. Reference specific projects and issues.
+
 STYLE: Direct language. No corporate filler. Every flag: description + evidence + action.
-Sort within projects: HIGH → MEDIUM → LOW. 
+Sort within projects: HIGH → MEDIUM → LOW.
 GREEN projects: one line only.
 Do NOT include acknowledged items in the main report — only the suppression summary line.
 Include per-flag confidence label: [Rule+LLM-confirmed] | [LLM-flagged, unvalidated] | [Needs PM Review].
@@ -745,7 +750,7 @@ INPUT DATA:
 
 ### 3.1 Cost Management
 
-The hybrid architecture reduces LLM call volume by approximately 81% vs. an all-LLM approach (see v2.0 cost table). The key driver: Stage B is called only for rule-detected candidates (~15% of threads), not all threads.
+The hybrid architecture reduces LLM call volume by approximately 81% vs. an all-LLM approach at scale with a representative corpus (see v2.0 cost table). The key driver: Stage B is called only for rule-detected candidates (~15% of threads), not all threads. Note: with the provided 18-email sample, which is intentionally dense with flaggable content, Stage B call rates will be higher than this figure.
 
 The low-confidence routing path adds a small number of additional Stage B calls (for `is_substantive_response_to()` LLM sub-calls in ambiguous cases), estimated at 5–8% of threads. This is a deliberate trade-off: slightly higher cost for significantly higher reliability in the most failure-prone detection step.
 

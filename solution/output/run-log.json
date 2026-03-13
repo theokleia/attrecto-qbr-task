@@ -26,7 +26,7 @@
       "patterns_found": 0
     },
     "stage_d": {
-      "output_path": "C:\\Users\\tekla\\Dropbox\\Tekla\\claude-code\\attrecto-qbr-task\\solution\\output\\sample-report.md",
+      "output_path": "output/sample-report.md",
       "projects_in_report": 2
     }
   },
