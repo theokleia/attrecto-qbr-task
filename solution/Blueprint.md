@@ -5,10 +5,6 @@
 **Date:** March 2026  
 **Artifact type:** Architectural Blueprint + PoC Design
 
-> **v2.1 Change Summary:** Six substantive amendments from a second adversarial cross-review (March 2026): (1) PII scanning architecture corrected — email addresses in structured header metadata are no longer redacted, only body-text occurrences; (2) `is_substantive_response_to()` redesigned as a two-stage heuristic with LLM sub-call fallback, explicitly acknowledged as the hardest function in the system; (3) SCOPE_SIGNALS list extended to bilingual EN/HU with co-occurrence guard to reduce false positive rate; (4) Failure Mode Matrix added covering every pipeline stage; (5) Low-confidence routing path added — gray-zone LLM outputs route to a "Needs PM Review" queue rather than being silently suppressed or blindly reported; (6) Known-issue acknowledgment mechanism added so the Director can suppress recurring known items. Secondary fixes: Assumptions confidence values corrected; Stage D temperature set to 0; PM incentive misalignment in validation layer acknowledged; PoC scope explicitly defined; strategic observations forward-referenced in Executive Summary; batch/continuous state management gap honestly acknowledged; prompt versioning and data retention gaps noted.
-
-> **v2.2 Change Summary:** Five production-readiness improvements: (1) Pipeline Observability section added — structured stage-boundary logging and `run-log.json` run record now part of the design; (2) Continuous mode gap strengthened — Temporal, Restate, and Celery named explicitly as recommended workflow orchestrators; (3) Redis named as the production state backend for acknowledged items, thread state, and run history; (4) Data Residency Option added to Section 1.4 — Stages B, C, and D can be redirected to a local vLLM/Ollama endpoint via three environment variables, addressing contractual restrictions on sending client emails to third-party AI providers; (5) Proactive concurrency cap added to Stage B — `MAX_CONCURRENT_LLM_CALLS` limits simultaneous LLM requests for large corpora.
-
 ---
 
 ## Table of Contents
