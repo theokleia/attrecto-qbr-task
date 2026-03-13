@@ -32,11 +32,17 @@ The pipeline runs in four stages:
 - Python 3.10+
 - `anthropic` package (for live LLM calls): `pip install anthropic`
 
+> **Windows users:** The pipeline uses Unicode characters in its output (✓, →). Run with `python -X utf8` to avoid encoding errors on Windows terminals:
+> ```
+> python -X utf8 analyzer.py ../../input/AI_Developer_files --mock
+> ```
+> On macOS/Linux the flag is not needed.
+
 ### Run in mock mode (no API key required)
 
 ```bash
 cd solution/src
-python analyzer.py ../input/AI_Developer_files --mock
+python analyzer.py ../../input/AI_Developer_files --mock
 ```
 
 > ⚠️ **Analyzing historical data?** The reference date defaults to the last day of the *current* quarter. If running against past data (e.g., the provided Q2 2025 sample), set `ANALYSIS_REFERENCE_DATE=2025-07-31` in `.env` — otherwise "days open" calculations will be inflated by the gap between then and now.
@@ -53,7 +59,7 @@ Output: `solution/output/sample-report.md`
 2. Run:
    ```bash
    cd solution/src
-   python analyzer.py ../input/AI_Developer_files
+   python analyzer.py ../../input/AI_Developer_files
    ```
 
 The analyzer auto-detects `.env` in the parent directory. If no API key is found, it falls back to mock mode automatically.
@@ -115,19 +121,23 @@ Every flag includes a confidence label: `[Rule+LLM-confirmed]`, `[LLM-confirmed]
 ## Project Structure
 
 ```
-solution/
-├── Blueprint.md              # Architectural design document
-├── README.md                 # This file
-├── .env.example              # Environment variable template
-├── src/
-│   ├── analyzer.py           # Main entry point
-│   ├── email_parser.py       # Ingestion & preprocessing (Stage 1)
-│   ├── ai_classifier.py      # Rule engine + LLM validator (Stages A-C)
-│   └── report_generator.py   # Report generation (Stage D)
-├── mock_data/
-│   └── jira_mock.json        # Mock Jira tickets for future Concept B integration
-└── output/
-    └── sample-report.md      # Generated report (from sample run)
+(repo root)/
+├── input/
+│   └── AI_Developer_files/   # Provided email .txt files + Colleagues.txt
+└── solution/
+    ├── Blueprint.md              # Architectural design document
+    ├── README.md                 # This file
+    ├── .env.example              # Environment variable template
+    ├── src/
+    │   ├── analyzer.py           # Main entry point
+    │   ├── email_parser.py       # Ingestion & preprocessing (Stage 1)
+    │   ├── ai_classifier.py      # Rule engine + LLM validator (Stages A-C)
+    │   └── report_generator.py   # Report generation (Stage D)
+    ├── mock_data/
+    │   └── jira_mock.json        # Mock Jira tickets for future Concept B integration
+    └── output/
+        ├── sample-report.md      # Generated report (from sample run)
+        └── run-log.json          # Machine-readable run record
 ```
 
 ---
