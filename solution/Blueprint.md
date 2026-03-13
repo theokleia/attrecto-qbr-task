@@ -1,11 +1,13 @@
 # QBR Portfolio Health Analyzer — System Blueprint
 
 **Author:** Tekla
-**Version:** 2.1  
+**Version:** 2.2
 **Date:** March 2026  
 **Artifact type:** Architectural Blueprint + PoC Design
 
 > **v2.1 Change Summary:** Six substantive amendments from a second adversarial cross-review (March 2026): (1) PII scanning architecture corrected — email addresses in structured header metadata are no longer redacted, only body-text occurrences; (2) `is_substantive_response_to()` redesigned as a two-stage heuristic with LLM sub-call fallback, explicitly acknowledged as the hardest function in the system; (3) SCOPE_SIGNALS list extended to bilingual EN/HU with co-occurrence guard to reduce false positive rate; (4) Failure Mode Matrix added covering every pipeline stage; (5) Low-confidence routing path added — gray-zone LLM outputs route to a "Needs PM Review" queue rather than being silently suppressed or blindly reported; (6) Known-issue acknowledgment mechanism added so the Director can suppress recurring known items. Secondary fixes: Assumptions confidence values corrected; Stage D temperature set to 0; PM incentive misalignment in validation layer acknowledged; PoC scope explicitly defined; strategic observations forward-referenced in Executive Summary; batch/continuous state management gap honestly acknowledged; prompt versioning and data retention gaps noted.
+
+> **v2.2 Change Summary:** Five production-readiness improvements: (1) Pipeline Observability section added — structured stage-boundary logging and `run-log.json` run record now part of the design; (2) Continuous mode gap strengthened — Temporal, Restate, and Celery named explicitly as recommended workflow orchestrators; (3) Redis named as the production state backend for acknowledged items, thread state, and run history; (4) Data Residency Option added to Section 1.4 — Stages B, C, and D can be redirected to a local vLLM/Ollama endpoint via three environment variables, addressing contractual restrictions on sending client emails to third-party AI providers; (5) Proactive concurrency cap added to Stage B — `MAX_CONCURRENT_LLM_CALLS` limits simultaneous LLM requests for large corpora.
 
 ---
 
@@ -311,6 +313,22 @@ BODY_SENSITIVE_PATTERNS = {
 
 **Data retention:** Project email data must not be retained in the system's storage beyond the period necessary for analysis. A documented retention and deletion policy is required before production deployment. This is not designed in this blueprint and is flagged as a production readiness gap.
 
+**Data Residency Option — On-Premise LLM Inference**
+
+For organizations where sending employee or client communications to an external AI provider is prohibited by contract, GDPR data processing restrictions, or internal policy, the pipeline supports full on-premise operation. Stages B, C, and D call the LLM through a configurable base URL. Redirecting to a local inference server requires three environment variables:
+
+```env
+LOCAL_LLM_BASE_URL=http://localhost:11434/v1   # Ollama, vLLM, or LM Studio endpoint
+LOCAL_LLM_MODEL=qwen2.5:7b                     # Model running locally
+USE_LOCAL_LLM=true                             # Switches all LLM calls to local endpoint
+```
+
+Compatible inference servers: [Ollama](https://ollama.com) (simplest for development), [vLLM](https://github.com/vllm-project/vllm) (production-grade, GPU-accelerated), LM Studio (desktop). Any server exposing an OpenAI-compatible `/v1/chat/completions` endpoint works without code changes.
+
+**Practical note:** A 7B parameter model on a mid-range GPU (e.g., RTX 3080) can process the PoC's 18 email threads in approximately 90 seconds — adequate for a quarterly batch job. For continuous mode at scale, a dedicated inference server is recommended.
+
+This directly addresses the contractual data residency concern identified in discovery (Q-J): whether processing client emails with a third-party AI provider violates the vendor's client agreements. With `USE_LOCAL_LLM=true`, no email content leaves the organization's infrastructure.
+
 ### 1.5 Tiered Noise Filter
 
 **Tier 1 — Heuristic (no LLM):** Applied when all three conditions are true:
@@ -490,6 +508,16 @@ def detect_scope_candidates(thread):
 **Temperature:** 0 (deterministic — for all stages including Stage D; see note)
 
 **On temperature for all stages:** v2.0 used 0.3 for Stage D on the grounds of "readability." This was wrong. Non-deterministic output means two runs of the same data can produce differently-worded reports, making the golden test set unreliable and PM validation inconsistent. Readability must be achieved through prompt engineering (clear structure, good examples) not through temperature. All stages run at temperature = 0.
+
+**Proactive concurrency cap**
+
+For the PoC's 18 threads, Stage B calls execute sequentially without issue. At the scale described in Q9 (1,000–3,000 emails), uncontrolled concurrency causes two problems: API 429 rate-limit errors and unpredictable cost spikes. The solution is a proactive cap, not just reactive backoff:
+
+```env
+MAX_CONCURRENT_LLM_CALLS=10   # Default: 10 simultaneous Stage B calls
+```
+
+At the default setting, a 1,000-thread corpus processes in batches of 10, providing predictable throughput and cost. The value is configurable because the optimal setting depends on the provider's rate-limit tier and the organization's cost budget. The failure mode matrix entry for API 429 (exponential backoff → `NEEDS_REVIEW`) remains the fallback; the concurrency cap is the proactive layer that should prevent those situations from occurring.
 
 **Prompt — Contextual Validator:**
 
@@ -814,6 +842,55 @@ This blueprint does not define a prompt versioning strategy. Prompts are code: c
 
 This is explicitly flagged as a production readiness gap not addressed in the PoC.
 
+### 4.6 Pipeline Observability
+
+A pipeline that fails silently is worse than a pipeline that fails loudly. The most dangerous failure mode is not a crash — it is a successful-looking run that produces an empty or incomplete report because a stage produced zero outputs without surfacing a warning.
+
+**Stage-boundary logging (stdout)**
+
+Every stage boundary emits a one-line log to stdout:
+
+```
+[Stage A] 7 candidates found across 3 projects (Project Phoenix: 4, DivatKirály: 3)
+[Stage B] 5 confirmed | 1 needs-review | 1 false-positive | mode: mock
+[Stage C] 1 cross-project pattern detected
+[Stage D] Report written → output/sample-report.md
+[Run complete] Duration: 4.2s | Tokens used: 1,840 (mock: 0 real)
+```
+
+**Zero-flag warning:** If Stage B produces zero confirmed flags, stdout shows:
+
+```
+[WARNING] Zero confirmed flags — verify with PMs that this reflects actual project health.
+```
+
+This warning is also injected into the report body (already in the failure mode matrix — this section defines architecturally *where* it originates).
+
+**Run log (`output/run-log.json`)**
+
+Each pipeline execution writes a machine-readable run record alongside the report:
+
+```json
+{
+  "run_id": "2025-Q2-20250615T143022",
+  "quarter": "Q2 2025",
+  "mode": "mock",
+  "started_at": "2025-06-15T14:30:22Z",
+  "completed_at": "2025-06-15T14:30:26Z",
+  "duration_seconds": 4.2,
+  "stages": {
+    "stage_a": {"candidates_total": 7, "by_project": {"Project Phoenix": 4, "DivatKirály": 3}},
+    "stage_b": {"confirmed": 5, "needs_review": 1, "false_positives": 1, "tokens_used": 1840},
+    "stage_c": {"patterns_found": 1},
+    "stage_d": {"output_path": "output/sample-report.md", "projects_in_report": 2}
+  },
+  "warnings": [],
+  "errors": []
+}
+```
+
+The run log enables: audit trails, regression detection (flag count drops between runs), and future integration with monitoring dashboards. Token count is 0 in mock mode and reflects actual API usage in live mode.
+
 ---
 
 ## Section 5 — Architectural Risk & Mitigation
@@ -856,6 +933,16 @@ Continuous mode requires:
 - A **deduplication layer** so that a flag raised on Monday is not raised again on Tuesday for the same underlying issue
 
 None of this is designed in this blueprint. It is flagged here rather than hidden in the "continuous mode is a configuration decision" framing of earlier versions. The PoC does not implement continuous mode, and evolving to it requires meaningful additional architectural work.
+
+**Recommended infrastructure for continuous mode:**
+
+The persistent state store, incremental processing, and deduplication layer described above map to established components:
+
+- **Workflow orchestration:** [Temporal](https://temporal.io), [Restate](https://restate.dev), or Celery with a Redis backend. Any of these provides durable task execution with checkpointing — if the pipeline crashes after Stage A, it resumes from Stage B rather than restarting from scratch.
+- **State store:** Redis. Fast, well-understood for operational data, supports TTL-based expiry (acknowledged items expire after N days automatically), and atomic updates that prevent race conditions under concurrent runs. The PoC's `acknowledged_items.json` file should be replaced with a Redis key-value store in any production deployment running more frequently than quarterly.
+- **Message queue:** Redis Streams, RabbitMQ, or SQS to receive email events in real time instead of batch-scanning a directory.
+
+These are named here so the architectural path from PoC to production is unambiguous rather than deferred to "requires additional architectural work."
 
 ### 5.3 Secondary Risks
 

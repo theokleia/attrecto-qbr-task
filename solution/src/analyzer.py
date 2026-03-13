@@ -15,9 +15,11 @@ Environment:
 """
 
 import argparse
+import json
 import os
 import sys
-from datetime import datetime
+import time
+from datetime import datetime, timezone
 
 # Allow running from src/ directory
 sys.path.insert(0, os.path.dirname(__file__))
@@ -93,6 +95,10 @@ def main():
         use_mock = True
 
     # ── Pipeline ──
+    run_start = datetime.now(timezone.utc)
+    run_start_monotonic = time.monotonic()
+    mode_label = 'mock' if use_mock else 'live'
+
     print(f"\n{'='*60}")
     print(f"QBR Portfolio Health Analyzer")
     print(f"Email source: {email_dir}")
@@ -107,8 +113,31 @@ def main():
     for project, threads in corpus.items():
         print(f"    {project}: {len(threads)} threads")
 
-    # Stages A → B → C
+    # Stage A: candidate extraction (inside classify_threads)
+    # Stage B + C
     results = classify_threads(corpus, use_mock=use_mock)
+
+    # ── Stage A log ──
+    total_candidates = sum(
+        len(d.get('confirmed_flags', [])) + len(d.get('needs_review', [])) + len(d.get('false_positives', []))
+        for d in results.values()
+    )
+    by_project_str = ', '.join(f"{p}: {len(d.get('confirmed_flags', [])) + len(d.get('needs_review', [])) + len(d.get('false_positives', []))}" for p, d in results.items())
+    print(f"[Stage A] {total_candidates} candidates found across {len(results)} project(s) ({by_project_str})")
+
+    # ── Stage B log ──
+    total_confirmed = sum(len(d.get('confirmed_flags', [])) for d in results.values())
+    total_review = sum(len(d.get('needs_review', [])) for d in results.values())
+    total_fp = sum(len(d.get('false_positives', [])) for d in results.values())
+    total_tokens = sum(d.get('tokens_used', 0) for d in results.values())
+    print(f"[Stage B] {total_confirmed} confirmed | {total_review} needs-review | {total_fp} false-positive | mode: {mode_label}")
+
+    if total_confirmed == 0:
+        print("[WARNING] Zero confirmed flags — verify with PMs that this reflects actual project health.")
+
+    # ── Stage C log ──
+    total_patterns = sum(len(d.get('cross_project_patterns', [])) for d in results.values())
+    print(f"[Stage C] {total_patterns} cross-project pattern(s) detected")
 
     # Stage D: Report
     print(f"\n[Stage D] Generating report...")
@@ -118,12 +147,45 @@ def main():
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(report_markdown)
 
+    run_end = datetime.now(timezone.utc)
+    duration = round(time.monotonic() - run_start_monotonic, 1)
+    tokens_display = f"{total_tokens} (mock: 0 real)" if use_mock else str(total_tokens)
+
+    print(f"[Stage D] Report written → {output_path}")
+    print(f"[Run complete] Duration: {duration}s | Tokens used: {tokens_display}")
+
+    # ── Write run-log.json ──
+    run_id = f"{args.quarter.replace(' ', '-')}-{run_start.strftime('%Y%m%dT%H%M%S')}"
+    by_project_stage_a = {
+        p: len(d.get('confirmed_flags', [])) + len(d.get('needs_review', [])) + len(d.get('false_positives', []))
+        for p, d in results.items()
+    }
+    warnings = []
+    if total_confirmed == 0:
+        warnings.append("Zero confirmed flags — verify with PMs that this reflects actual project health.")
+    run_log = {
+        "run_id": run_id,
+        "quarter": args.quarter,
+        "mode": mode_label,
+        "started_at": run_start.isoformat().replace('+00:00', 'Z'),
+        "completed_at": run_end.isoformat().replace('+00:00', 'Z'),
+        "duration_seconds": duration,
+        "stages": {
+            "stage_a": {"candidates_total": total_candidates, "by_project": by_project_stage_a},
+            "stage_b": {"confirmed": total_confirmed, "needs_review": total_review, "false_positives": total_fp, "tokens_used": total_tokens},
+            "stage_c": {"patterns_found": total_patterns},
+            "stage_d": {"output_path": output_path, "projects_in_report": len(results)},
+        },
+        "warnings": warnings,
+        "errors": [],
+    }
+    log_path = os.path.join(os.path.dirname(output_path), 'run-log.json')
+    with open(log_path, 'w', encoding='utf-8') as f:
+        json.dump(run_log, f, indent=2)
+
     print(f"\n{'='*60}")
     print(f"Report written to: {output_path}")
-
-    # Quick summary
-    total_confirmed = sum(len(d.get('confirmed_flags', [])) for d in results.values())
-    total_review = sum(len(d.get('needs_review', [])) for d in results.values())
+    print(f"Run log written to: {log_path}")
     print(f"Confirmed flags: {total_confirmed}")
     print(f"Needs PM review: {total_review}")
     print(f"{'='*60}\n")

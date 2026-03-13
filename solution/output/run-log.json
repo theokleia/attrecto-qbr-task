@@ -1,0 +1,32 @@
+{
+  "run_id": "Q2-2025-20260313T073146",
+  "quarter": "Q2 2025",
+  "mode": "live",
+  "started_at": "2026-03-13T07:31:46.604087Z",
+  "completed_at": "2026-03-13T07:38:29.083183Z",
+  "duration_seconds": 402.5,
+  "stages": {
+    "stage_a": {
+      "candidates_total": 15,
+      "by_project": {
+        "Project Phoenix": 5,
+        "DivatKir\u00e1ly": 10
+      }
+    },
+    "stage_b": {
+      "confirmed": 8,
+      "needs_review": 7,
+      "false_positives": 0,
+      "tokens_used": 0
+    },
+    "stage_c": {
+      "patterns_found": 0
+    },
+    "stage_d": {
+      "output_path": "C:\\Users\\tekla\\Dropbox\\Tekla\\claude-code\\attrecto-qbr-task\\solution\\output\\sample-report.md",
+      "projects_in_report": 2
+    }
+  },
+  "warnings": [],
+  "errors": []
+}
