@@ -181,7 +181,7 @@ def main():
     # ── Write run-log.json ──
     run_id = f"{args.quarter.replace(' ', '-')}-{run_start.strftime('%Y%m%dT%H%M%S')}"
     solution_dir = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-    relative_output_path = os.path.relpath(output_path, solution_dir)
+    relative_output_path = os.path.relpath(output_path, solution_dir).replace('\\', '/')
     by_project_stage_a = {
         p: len(d.get('confirmed_flags', [])) + len(d.get('needs_review', [])) + len(d.get('false_positives', []))
         for p, d in results.items()

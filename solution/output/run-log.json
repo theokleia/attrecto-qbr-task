@@ -1,10 +1,10 @@
 {
-  "run_id": "Q2-2025-20260313T124219",
+  "run_id": "Q2-2025-20260313T130540",
   "quarter": "Q2 2025",
   "mode": "live",
-  "started_at": "2026-03-13T12:42:19.261556Z",
-  "completed_at": "2026-03-13T12:48:38.575389Z",
-  "duration_seconds": 379.3,
+  "started_at": "2026-03-13T13:05:40.726524Z",
+  "completed_at": "2026-03-13T13:11:58.844789Z",
+  "duration_seconds": 378.1,
   "stages": {
     "noise_filter": {
       "threads_excluded": 1
@@ -17,16 +17,16 @@
       }
     },
     "stage_b": {
-      "confirmed": 7,
-      "needs_review": 8,
+      "confirmed": 8,
+      "needs_review": 7,
       "false_positives": 23,
-      "tokens_used": 66849
+      "tokens_used": 66947
     },
     "stage_c": {
-      "patterns_found": 3
+      "patterns_found": 4
     },
     "stage_d": {
-      "output_path": "output\\sample-report.md",
+      "output_path": "output/sample-report.md",
       "projects_in_report": 2
     }
   },

@@ -305,9 +305,18 @@ def generate_report(classification_results: dict,
         lines += ["---", ""]
 
     # ── Needs PM Review ──
-    all_needs_review = []
+    all_needs_review_raw = []
     for project, data in classification_results.items():
         for flag in data.get("needs_review", []):
+            all_needs_review_raw.append((project, flag))
+
+    # Deduplicate by (thread_id, flag_type) — same logic as confirmed sections
+    seen_nr = set()
+    all_needs_review = []
+    for project, flag in all_needs_review_raw:
+        key = (flag.thread_id, flag.flag_type)
+        if key not in seen_nr:
+            seen_nr.add(key)
             all_needs_review.append((project, flag))
 
     if all_needs_review:

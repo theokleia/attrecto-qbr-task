@@ -519,6 +519,8 @@ MAX_CONCURRENT_LLM_CALLS=10   # Default: 10 simultaneous Stage B calls
 
 At the default setting, a 1,000-thread corpus processes in batches of 10, providing predictable throughput and cost. The value is configurable because the optimal setting depends on the provider's rate-limit tier and the organization's cost budget. The failure mode matrix entry for API 429 (exponential backoff → `NEEDS_REVIEW`) remains the fallback; the concurrency cap is the proactive layer that should prevent those situations from occurring.
 
+**Note:** Concurrency capping is not implemented in the PoC, which processes Stage B calls sequentially in a `for` loop. For the PoC's 18 threads this is completely adequate. This is a production-readiness item for large-scale deployment.
+
 **Prompt — Contextual Validator:**
 
 ```
@@ -844,7 +846,7 @@ Each pipeline execution writes a machine-readable run record alongside the repor
   "duration_seconds": 4.2,
   "stages": {
     "stage_a": {"candidates_total": 7, "by_project": {"Project Phoenix": 4, "DivatKirály": 3}},
-    "stage_b": {"confirmed": 5, "needs_review": 1, "false_positives": 1, "tokens_used": 1840},
+    "stage_b": {"confirmed": 5, "needs_review": 1, "false_positives": 1, "tokens_used": 66849},  // see committed run-log.json for a real live-run example
     "stage_c": {"patterns_found": 1},
     "stage_d": {"output_path": "output/sample-report.md", "projects_in_report": 2}
   },

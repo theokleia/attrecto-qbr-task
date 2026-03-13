@@ -1,19 +1,26 @@
 # QBR Portfolio Health Report
 **Period:** Q2 2025  
-**Generated:** 2026-03-13 13:48  
-**Projects Reviewed:** 2 | **Open Flags:** 7 | **Needs Review:** 8
+**Generated:** 2026-03-13 14:11  
+**Projects Reviewed:** 2 | **Open Flags:** 8 | **Needs Review:** 7
 
 ---
 
 ## Executive Summary
 
-Portfolio health is degraded across both active projects, with 6 open flags spanning compliance violations, stalled decisions, and uncontrolled scope — several exceeding 200 days without resolution. The single most critical concern is DivatKirály's open GDPR incident: a pre-checked newsletter subscription checkbox flagged by the client on 2025-06-26 remains unconfirmed as fixed in production, a developer already attempted an incorrect scope of fix that had to be intercepted by the BA, and unresolved compliance exposure on a live system cannot wait for sprint cycles. Separately, Project Phoenix carries two unresolved blockers — an unconfirmed bug fix for filename-space 404s and a spec sign-off gap on the login page — both stalled for 211 days and at risk of compounding delivery debt if not closed this sprint.
+DivatKirály is the portfolio's primary risk concentration, carrying an open GDPR violation (pre-checked newsletter checkbox, unresolved since June 2025), an uncontrolled scope change accepted without formal change control (SKU-based search), and three stalled decisions spanning up to 206 days — including an untracked password-change notification that represents a live security gap. Project Phoenix is stable by comparison but carries two medium-severity stalls: a login spec with unresolved sign-off after 211 days and a confirmed image-upload bug unaddressed for over 9 months. The single most critical concern is the DivatKirály GDPR checkbox issue: confirm with Zsófia Varga today whether the fix is live in production, as this is an active compliance liability, not a backlog item.
 
 ---
 
 ## 🔴 Immediate Attention Required
 
 ### DivatKirály
+
+**Stalled Decision** — `MEDIUM` [LLM-confirmed]
+> A security-relevant decision to send confirmation emails after password changes was informally agreed upon in July 2025 but never formally resolved, assigned, or tracked — it has been open for 194 days with no follow-up.
+**Evidence:** _PM Gábor Nagy wrote on 2025-07-03: 'Let's add the email after password modification to the to-do list.' — this is a deferral to a backlog item, not a confirmed decision or implementation. No subsequen_
+**Days open:** 194 business days
+**Owner:** gabor.nagy@kisjozsitech.hu
+**Action:** Direct Gábor Nagy (PM) to confirm whether the confirmation-email-after-password-change feature was formally added to the backlog and implemented. If not, escalate as a security gap: password change notifications are a standard security control and the absence of a formal decision or implementation record after 194 days represents both a delivery and a compliance risk on the DivatKirály project.
 
 **Stalled Decision** — `MEDIUM` [Rule+LLM-confirmed]
 > A client-requested CSV export feature for DivatKirály has had no scheduling decision for 199 days after Eszter Varga directed the question to Gábor with no recorded response.
@@ -23,17 +30,17 @@ Portfolio health is degraded across both active projects, with 6 open flags span
 **Action:** Identify who 'Gábor' is (likely a Tech Lead or Engineering Manager on DivatKirály) and obtain an immediate scheduling decision on the CSV export feature; if the feature has already been scoped or delivered outside this thread, close the flag with documentation, otherwise add it to the backlog with a committed sprint target and notify the client via Zoltán Kiss.
 
 **Uncontrolled Scope Change** — `MEDIUM` [Rule+LLM-confirmed]
-> A new SKU-based search requirement surfaced informally via a delayed client mention, confirmed as out-of-scope by the BA, and accepted into the backlog without documented client sign-off on cost or timeline impact.
-**Evidence:** _Eszter (email18_msg1): 'in last week's meeting, the client mentioned it would be good if the search worked not only for product names but also for item numbers (SKU). I forgot to mention this until no_
+> A new SKU-based search requirement surfaced informally via the Client Relationship Manager a week after the client meeting, was not in the original specification, and has been accepted into scope without a formal change control decision on timeline or cost impact.
+**Evidence:** _Eszter Horvath (email18_msg1): 'in last week's meeting, the client mentioned it would be good if the search worked not only for product names but also for item numbers (SKU). I forgot to mention this _
 **Owner:** peter.kovacs@kisjozsitech.hu
-**Action:** Direct Péter Kovács to halt scheduling of the SKU search work until a formal change request is signed by the client, including effort estimate (~0.5 backend day + testing per Gábor in email18_msg3), impact on timeline, and any cost implications; verbal 'we'll do it' (email18_msg4) is insufficient change governance for a project in active delivery.
+**Action:** Direct the PM (Péter Kovacs) to immediately initiate a formal change request for the 'Extend search by SKU' requirement: document the scope delta, obtain written client approval, assess impact on the current sprint and delivery timeline, and confirm whether this constitutes a billable extra. Verify that the JIRA ticket (requested by Anna Nagy) has been created and linked to a change log before Gábor begins implementation next week.
 
-**Stalled Decision** — `LOW` [Rule+LLM-confirmed]
-> A 'nice to have' feature request for a 'NEW' badge on product pages was raised on 2025-06-16 with an explicit sizing/prioritization question and has received zero responses in 206 days.
-**Evidence:** _'How big of a task would this be? Could we fit it into the current sprint if it's not a huge effort?' — asked by anna.nagy@kisjozsitech.hu on 2025-06-16; no reply, estimate, or decision exists anywher_
+**Stalled Decision** — `LOW` [LLM-confirmed]
+> A 'nice to have' feature request for a 'NEW' badge on product pages was raised on 2025-06-16 with an explicit sizing/prioritization question, and has received zero responses in 206 days.
+**Evidence:** _Anna Nagy asked on 2025-06-16: 'How big of a task would this be? Could we fit it into the current sprint if it's not a huge effort?' — no reply, estimate, or prioritization decision is present anywher_
 **Days open:** 206 business days
 **Owner:** anna.nagy@kisjozsitech.hu
-**Action:** Direct the tech lead or a senior developer to provide a quick effort estimate for the 'NEW' badge feature, then make an explicit backlog/sprint decision: either schedule it, defer it to a future release, or formally close it as out of scope — and communicate the outcome to Anna Nagy to close the loop.
+**Action:** Direct the engineering lead to provide a quick effort estimate (story points or hours) for the 'NEW' badge feature, then have the product owner formally accept, defer to backlog, or close it as out-of-scope — the decision has been pending 206 days and should be resolved in the next sprint planning session to avoid continued backlog ambiguity.
 
 ---
 
@@ -42,18 +49,18 @@ Portfolio health is degraded across both active projects, with 6 open flags span
 ### Project Phoenix
 
 **Stalled Decision** — `MEDIUM` [LLM-confirmed]
-> Zsuzsa's June 9 message resolved the SSO scope question but left two other open issues unaddressed — minimum password length (Gábor, email1_msg1) and implicit spec sign-off — with no follow-up response in 211 days.
-**Evidence:** _Zsuzsa's final message (email1_msg4, 2025-06-09) states 'We can remove it from the scope for now. Are the other points okay?' — the trailing question received no reply in the thread. Gábor's unresolve_
+> Zsuzsa resolved the Google SSO scope question on 2025-06-09 but left two open items unanswered — minimum password length (Gábor's point 3.2 query) and explicit team confirmation that all remaining spec points are accepted — with no follow-up recorded in 211 days.
+**Evidence:** _Zsuzsa's final message (email1_msg4, 2025-06-09) states 'We can remove it from the scope for now. Are the other points okay?' — the question 'Are the other points okay?' has received no reply in the t_
 **Days open:** 211 business days
 **Owner:** varga.zsuzsa@kisjozsitech.hu
-**Action:** Direct Zsuzsa (varga.zsuzsa@kisjozsitech.hu) to immediately confirm: (1) the minimum password length requirement from Gábor's open question, and (2) explicit team sign-off on the remaining spec points. Escalate to Péter (kovacs.peter@kisjozsitech.hu) as the senior stakeholder who issued the coordination request, and ensure a formal spec approval is recorded before any further login page development proceeds.
+**Action:** Direct Zsuzsa (varga.zsuzsa@kisjozsitech.hu) to immediately follow up with the team to: (1) confirm the minimum password length requirement for point 3.2 as raised by Gábor, and (2) obtain explicit sign-off from all reviewers that the remaining spec points are accepted. Péter (kovacs.peter@kisjozsitech.hu) should be looped in as the apparent decision authority to formally close the specification before any further development proceeds on the login page.
 
 **Stalled Decision** — `MEDIUM` [LLM-confirmed]
-> A confirmed bug in the image upload logic (filenames with spaces causing 404s) was identified by a Senior Developer on 2025-06-29, attributed to a Junior Developer's commit, but the thread ends with only an acknowledgment ('I'll check it immediately') and no confirmed fix as of the last message on 2025-06-30 — leaving the issue unresolved with 211 days elapsed since original report.
+> A confirmed bug in the image upload logic — where filenames containing spaces cause a 404 on the frontend — was identified by a Senior Developer on 2025-06-29, acknowledged by the responsible Junior Developer on 2025-06-30, but no resolution or fix has been confirmed in the thread as of today (2026-03-31), leaving the issue open for over 9 months.
 **Evidence:** _nagy.istvan: 'it only happens if the image name contains spaces. The system renames it, but the frontend somehow requests the old, space-containing name from the API, which returns a 404. This isn't a_
 **Days open:** 211 business days
 **Owner:** horvath.gabor@kisjozsitech.hu
-**Action:** Direct the Engineering Director to immediately follow up with horvath.gabor@kisjozsitech.hu for a status update on the filename-space bug fix; if no fix has been committed, assign a senior developer to review and resolve the image upload logic within the current sprint, and verify the fix is deployed and tested on staging before closing the issue.
+**Action:** Immediately follow up with horvath.gabor@kisjozsitech.hu to confirm whether the filename-space bug in the image upload logic was ever fixed; if not, assign a tracked ticket with a deadline and request nagy.istvan@kisjozsitech.hu to verify the fix on staging before closing, given this issue has been unresolved for over 9 months.
 
 ---
 
@@ -69,29 +76,37 @@ _Client email (2025-06-26 14:55): 'the newsletter subscription is automatically 
 ## Cross-Project Patterns
 
 **[Project Phoenix] SYSTEMIC_PROCESS_FAILURE** — `HIGH`
-> Multiple open technical issues across Project Phoenix have stalled for 211 days with no confirmed resolution, indicating a systemic failure to close and formally verify action items after initial acknowledgment.
+> At least two distinct technical decisions or bug fixes have been acknowledged but left without formal resolution or follow-up for extended periods (211+ days and 9+ months respectively), indicating a systemic failure to close open action items on Project Phoenix.
 **Threads:** email1, email4
 **Evidence:**
-  - `email1`: Minimum password length question raised by Gábor and implicit spec sign-off remain unaddressed for 211 days after Zsuzsa's June 9 message, with no follow-up response recorded.
-  - `email4`: A confirmed image upload bug (filenames with spaces causing 404s) was acknowledged by Horvath Gábor with 'I'll check it immediately' on 2025-06-30, but no confirmed fix exists — also 211 days elapsed with no closure.
-**Action:** The Director should mandate a formal issue-tracking protocol for Project Phoenix: every raised defect or open question must have a named owner, a due date, and a confirmed-closed status update. An immediate audit of both threads should be scheduled to determine current state of the password length spec, the sign-off, and the image upload bug fix.
+  - `email1`: Zsuzsa resolved the Google SSO scope question on 2025-06-09 but left minimum password length (Gábor's point 3.2 query) and explicit team confirmation of remaining spec points unanswered, with no follow-up recorded in 211 days.
+  - `email4`: A confirmed bug in the image upload logic (filenames with spaces causing a 404) was identified on 2025-06-29 and acknowledged on 2025-06-30, but no resolution or fix has been confirmed in over 9 months as of 2026-03-31.
+**Action:** The Director should institute a mandatory open-item closure process for Project Phoenix: require owners (varga.zsuzsa@kisjozsitech.hu for email1, horvath.gabor@kisjozsitech.hu for email4) to provide written resolution status within 5 business days, and introduce a recurring review cadence (e.g., bi-weekly) to surface and formally close any stalled decisions or unresolved bugs before they age further.
+
+**[DivatKirály] RECURRING_BLOCKER** — `HIGH`
+> Gábor Nagy is a silent bottleneck across multiple threads: decisions routed to him in email11 received no recorded response, and he owns an unresolved security decision in email10 that has been open for 194 days.
+**Threads:** email10, email11
+**Evidence:**
+  - `email10`: A security-relevant decision (confirmation emails after password changes) was informally agreed upon in July 2025 and is owned by gabor.nagy@kisjozsitech.hu with no follow-up in 194 days.
+  - `email11`: Eszter Varga directed the CSV export scheduling question to Gábor with no recorded response in 199 days — Gábor is the implicit decision-maker who has not acted.
+**Action:** The Director should directly engage Gábor Nagy to audit all open action items assigned to or routed through him, establish a response SLA, and determine whether he is under-resourced or whether decisions are being informally blocked at his level.
 
 **[DivatKirály] SYSTEMIC_PROCESS_FAILURE** — `HIGH`
-> Multiple client-raised feature and compliance requests across the project are going unresolved for extended periods (199–206 days), indicating a systemic failure in the team's intake, triage, and response process for DivatKirály.
-**Threads:** email11, email16, email17
+> Multiple client-facing requests — a CSV export feature (email11), a 'NEW' badge on product pages (email16), and an untracked SKU-based search requirement (email18) — have entered the project informally with no formal scheduling, change control, or resolution, indicating a systemic failure to capture and govern client requests.
+**Threads:** email11, email16, email18
 **Evidence:**
-  - `email11`: CSV export feature request directed to Gábor by Eszter Varga with no recorded response for 199 days — no scheduling decision made.
-  - `email16`: NEW badge feature request raised by Anna Nagy on 2025-06-16 with an explicit sizing/prioritization question; zero responses or decisions in 206 days.
-  - `email17`: A GDPR-violating pre-checked newsletter checkbox flagged by the client on 2025-06-26 remains unresolved as of the last message, with an incorrect fix scope also proposed internally.
-**Action:** The Director should mandate an immediate audit of all open client-raised items across DivatKirály threads, establish a formal SLA for first-response and resolution, and assign a single accountable owner to each open item with a deadline for closure or explicit deferral.
+  - `email11`: A client-requested CSV export feature has had no scheduling decision for 199 days after being raised, with no formal tracking initiated.
+  - `email16`: A client feature request for a 'NEW' badge on product pages was raised on 2025-06-16 with an explicit prioritization question and has received zero responses or decisions in 206 days.
+  - `email18`: A new SKU-based search requirement surfaced informally via the Client Relationship Manager, was not in the original specification, and was accepted into scope without any formal change control decision on timeline or cost impact.
+**Action:** The Director should mandate a single formal intake process for all client requests, require that every request receives a logged triage decision within a defined SLA, and conduct an immediate audit to formally accept, reject, or defer the three outstanding requests identified here.
 
-**[DivatKirály] IMPLICIT_COMMITMENT** — `MEDIUM`
-> Client requests are being informally acknowledged or redirected without formal tracking or documented decisions, creating a pattern of implicit commitments with no audit trail across multiple threads.
-**Threads:** email11, email18
+**[DivatKirály] IMPLICIT_COMMITMENT** — `HIGH`
+> Two separate security- and compliance-critical issues — an unresolved password-change confirmation email (email10) and an unresolved GDPR-violating pre-checked newsletter checkbox (email17) — have been acknowledged but never formally resolved, creating implicit commitments with legal and reputational exposure.
+**Threads:** email10, email17
 **Evidence:**
-  - `email11`: Eszter Varga forwarded the client's CSV export request to Gábor, implying the team would handle it, but no formal decision, ticket, or timeline was recorded — leaving the client with an unconfirmed expectation for 199 days.
-  - `email18`: A new SKU-based search requirement surfaced informally via a delayed client mention, was confirmed out-of-scope by the BA, yet was accepted into the backlog without documented client sign-off on cost or timeline impact — creating an undocumented delivery obligation.
-**Action:** The Director should require that all client requests — regardless of how they surface — be logged in the formal backlog within 48 hours with an explicit status (accepted/deferred/rejected), and that any scope additions require written client acknowledgment of impact before entering the backlog.
+  - `email10`: A security-relevant decision to send confirmation emails after password changes was informally agreed upon in July 2025 but never formally assigned or tracked, remaining open for 194 days.
+  - `email17`: A GDPR-violating pre-checked newsletter subscription checkbox was flagged by the client on 2025-06-26 and remains unresolved, with a developer also proposing an incorrect fix scope that had to be stopped by the BA — indicating the issue is active but ungoverned.
+**Action:** The Director should treat both items as urgent compliance risks, assign a named owner with a hard deadline for each, and ensure legal or DPO review is obtained for the GDPR issue before the next client-facing release.
 
 ---
 
@@ -100,35 +115,27 @@ _Client email (2025-06-26 14:55): 'the newsletter subscription is automatically 
 _The items below were detected by the rule engine but could not be confirmed with high confidence. Please review with the relevant PM before the QBR._
 
 **[Project Phoenix]** Stalled Decision — [Unvalidated, confidence: 55%]
-> The minimum password length for the new login page (point 3.2) was raised as an open question on 2025-06-02 and has never been explicitly answered in the thread, leaving a security-relevant specification gap unresolved for over 216 days.
-**Evidence:** _horvath.gabor@kisjozsitech.hu wrote: 'I don't see any mention of the minimum password length. Should it be 8 characters, like in other modules?' (emai_
+> The minimum password length requirement for the Project Phoenix login page was raised 216 days ago and has never received a documented answer in this thread, leaving a potential security-relevant specification gap unresolved.
+**Evidence:** _horvath.gabor@kisjozsitech.hu wrote on 2025-06-02T10:15: 'I don't see any mention of the minimum password length. Should it be 8 characters, like in o_
+
+**[Project Phoenix]** Stalled Decision — [Unvalidated, confidence: 62%]
+> JIRA-112 (profile picture bug) was acknowledged as being investigated by Gábor on 2025-06-30, but no resolution has been recorded in this thread across 196 days, and the responsible party never responded directly.
+**Evidence:** _Péter confirms 'Yes, Gábor is looking into it' (email3_msg1, 2025-06-30T10:05), which is an acknowledgment-only signal. No message from Gábor appears _
 
 **[Project Phoenix]** Stalled Decision — [Unvalidated, confidence: 55%]
-> JIRA-112 (profile picture bug) was acknowledged as being investigated by Gábor on 2025-06-30, but no resolution has been recorded in this thread, and the item has been open for 196 days with no follow-up visible.
-**Evidence:** _Péter confirms 'Yes, Gábor is looking into it' (email3_msg1, 2025-06-30T10:05), which is an acknowledgment-only signal. No subsequent message in the t_
-
-**[Project Phoenix]** Stalled Decision — [Unvalidated, confidence: 45%]
-> A confirmed bug in the profile picture upload logic (filenames with spaces causing 404s) was attributed to Gábor's commit on 2025-06-30, but the thread ends with only an acknowledgment and no confirmed fix, leaving resolution status unknown after 197 days.
-**Evidence:** _Gábor stated on 2025-06-30: 'I rewrote the filename validation to replace special characters. It's possible the frontend isn't receiving the modified _
-
-**[DivatKirály]** Stalled Decision — [Unvalidated, confidence: 55%]
-> A security-relevant decision about sending confirmation emails after password changes was raised on 2025-07-02 and only reached a 'add to to-do list' acknowledgment from the PM, with no confirmed implementation or formal specification update in 194 days.
-**Evidence:** _PM stated 'Let's add the email after password modification to the to-do list' (email10_msg3, 2025-07-03T10:45:00), but no subsequent message in the th_
+> A confirmed bug in the image upload logic (filenames with spaces causing 404s) was re-surfaced on 2025-06-29 and attributed to Gábor's commit, but the thread ends with only an acknowledgment from Gábor on 2025-06-30 and no documented resolution over the following 9 months.
+**Evidence:** _nagy.istvan: 'This isn't a cache issue; it's a bug in the image upload logic. Gábor, didn't your last commit touch this part?' — horvath.gabor: 'Yes, _
 
 **[DivatKirály]** Stalled Decision — [Unvalidated, confidence: 62%]
 > A client CSV export request forwarded on 2025-06-25 has received no decision or follow-up after the BA asked Gábor for a scheduling assessment, leaving the feature request unresolved for 199 days.
 **Evidence:** _Eszter Varga (BA) asked on 2025-06-25T14:05: 'Gábor, what do you think, does it fit into the current schedule?' — no response from Gábor or any other _
 
-**[DivatKirály]** Stalled Decision — [Unvalidated, confidence: 62%]
-> A client CSV export request forwarded on 2025-06-25 received only a feasibility acknowledgment from the BA and a question directed at Gábor, with no decision, assignment, or resolution recorded in 199 days.
-**Evidence:** _Eszter Varga (BA) wrote on 2025-06-25T14:05: 'It's technically feasible, but we need to assess the development effort. Gábor, what do you think, does _
+**[DivatKirály]** Stalled Decision — [Unvalidated, confidence: 45%]
+> Anna's clarification question about the 'Add to Cart' button (color change vs. size/bold) was never answered in the thread, leaving that specific design decision open, though the higher-priority logo issue was resolved.
+**Evidence:** _email14_msg1: 'Does the client want a different color instead of the current green, or just for it to be larger/bold? This isn't clear.' — email14_msg_
 
-**[DivatKirály]** Stalled Decision — [Unvalidated, confidence: 35%]
-> Anna's unanswered clarification question about whether the 'Add to Cart' button change requires a color swap or just size/bold formatting remains unresolved in this thread, though the overall project context is 221 days old and the item may be stale or handled elsewhere.
-**Evidence:** _email14_msg1: 'Does the client want a different color instead of the current green, or just for it to be larger/bold? This isn't clear.' — No subseque_
-
-**[DivatKirály]** Uncontrolled Scope Change — [Unvalidated, confidence: 55%]
-> A BA introduced a new 'NEW badge' UI requirement mid-sprint with no engineering response or formal scope decision recorded in the thread.
+**[DivatKirály]** Uncontrolled Scope Change — [Unvalidated, confidence: 45%]
+> A BA has proposed a 'nice to have' NEW badge feature mid-sprint but no acceptance or scope commitment has been recorded yet, leaving the risk potential but unconfirmed.
 **Evidence:** _anna.nagy@kisjozsitech.hu wrote: 'A "nice to have" requirement came up: products uploaded in the last 30 days should have a small "NEW" badge on their_
 
 ---
@@ -136,14 +143,15 @@ _The items below were detected by the rule engine but could not be confirmed wit
 ## Recommended Director Actions
 
 1. **[DivatKirály — Fwd: Re: DivatKirály - User registration process]** Confirm with Zsófia Varga immediately whether the newsletter checkbox fix has been deployed to production; verify that only the newsletter checkbox was changed (not Terms and Conditions); request a test confirmation from Eszter Horváth to close the loop with the client, given the GDPR compliance risk and the near-miss scope error.
-2. **[Project Phoenix — Project Phoenix - New Login Page Specification]** Direct Zsuzsa (varga.zsuzsa@kisjozsitech.hu) to immediately confirm: (1) the minimum password length requirement from Gábor's open question, and (2) explicit team sign-off on the remaining spec points. Escalate to Péter (kovacs.peter@kisjozsitech.hu) as the senior stakeholder who issued the coordination request, and ensure a formal spec approval is recorded before any further login page development proceeds.
-3. **[Project Phoenix — Project Phoenix - Staging Environment Anomaly]** Direct the Engineering Director to immediately follow up with horvath.gabor@kisjozsitech.hu for a status update on the filename-space bug fix; if no fix has been committed, assign a senior developer to review and resolve the image upload logic within the current sprint, and verify the fix is deployed and tested on staging before closing the issue.
-4. **[DivatKirály — Fwd: Request regarding report export]** Identify who 'Gábor' is (likely a Tech Lead or Engineering Manager on DivatKirály) and obtain an immediate scheduling decision on the CSV export feature; if the feature has already been scoped or delivered outside this thread, close the flag with documentation, otherwise add it to the backlog with a committed sprint target and notify the client via Zoltán Kiss.
-5. **[DivatKirály — DivatKirály - Weekly status and development progre]** Direct Péter Kovács to halt scheduling of the SKU search work until a formal change request is signed by the client, including effort estimate (~0.5 backend day + testing per Gábor in email18_msg3), impact on timeline, and any cost implications; verbal 'we'll do it' (email18_msg4) is insufficient change governance for a project in active delivery.
-6. **[DivatKirály — Small request: "New" label on the product page]** Direct the tech lead or a senior developer to provide a quick effort estimate for the 'NEW' badge feature, then make an explicit backlog/sprint decision: either schedule it, defer it to a future release, or formally close it as out of scope — and communicate the outcome to Anna Nagy to close the loop.
+2. **[Project Phoenix — Project Phoenix - New Login Page Specification]** Direct Zsuzsa (varga.zsuzsa@kisjozsitech.hu) to immediately follow up with the team to: (1) confirm the minimum password length requirement for point 3.2 as raised by Gábor, and (2) obtain explicit sign-off from all reviewers that the remaining spec points are accepted. Péter (kovacs.peter@kisjozsitech.hu) should be looped in as the apparent decision authority to formally close the specification before any further development proceeds on the login page.
+3. **[Project Phoenix — Project Phoenix - Staging Environment Anomaly]** Immediately follow up with horvath.gabor@kisjozsitech.hu to confirm whether the filename-space bug in the image upload logic was ever fixed; if not, assign a tracked ticket with a deadline and request nagy.istvan@kisjozsitech.hu to verify the fix on staging before closing, given this issue has been unresolved for over 9 months.
+4. **[DivatKirály — User Profile Page - Data Modification Flow]** Direct Gábor Nagy (PM) to confirm whether the confirmation-email-after-password-change feature was formally added to the backlog and implemented. If not, escalate as a security gap: password change notifications are a standard security control and the absence of a formal decision or implementation record after 194 days represents both a delivery and a compliance risk on the DivatKirály project.
+5. **[DivatKirály — Fwd: Request regarding report export]** Identify who 'Gábor' is (likely a Tech Lead or Engineering Manager on DivatKirály) and obtain an immediate scheduling decision on the CSV export feature; if the feature has already been scoped or delivered outside this thread, close the flag with documentation, otherwise add it to the backlog with a committed sprint target and notify the client via Zoltán Kiss.
+6. **[DivatKirály — DivatKirály - Weekly status and development progre]** Direct the PM (Péter Kovacs) to immediately initiate a formal change request for the 'Extend search by SKU' requirement: document the scope delta, obtain written client approval, assess impact on the current sprint and delivery timeline, and confirm whether this constitutes a billable extra. Verify that the JIRA ticket (requested by Anna Nagy) has been created and linked to a change log before Gábor begins implementation next week.
+7. **[DivatKirály — Small request: "New" label on the product page]** Direct the engineering lead to provide a quick effort estimate (story points or hours) for the 'NEW' badge feature, then have the product owner formally accept, defer to backlog, or close it as out-of-scope — the decision has been pending 206 days and should be resolved in the next sprint planning session to avoid continued backlog ambiguity.
 
 ---
 
 ⚠️ **AI-GENERATED REPORT** — Validate flagged items with responsible PMs before acting.
 Generated by QBR Portfolio Health Analyzer v2.2 | Model: claude-sonnet-4-6
-Run date: 2026-03-13 13:48
+Run date: 2026-03-13 14:11
