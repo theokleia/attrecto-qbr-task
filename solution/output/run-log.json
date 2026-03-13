@@ -1,10 +1,10 @@
 {
-  "run_id": "Q2-2025-20260313T120742",
+  "run_id": "Q2-2025-20260313T124219",
   "quarter": "Q2 2025",
   "mode": "live",
-  "started_at": "2026-03-13T12:07:42.216708Z",
-  "completed_at": "2026-03-13T12:13:53.384411Z",
-  "duration_seconds": 371.2,
+  "started_at": "2026-03-13T12:42:19.261556Z",
+  "completed_at": "2026-03-13T12:48:38.575389Z",
+  "duration_seconds": 379.3,
   "stages": {
     "noise_filter": {
       "threads_excluded": 1
@@ -17,13 +17,13 @@
       }
     },
     "stage_b": {
-      "confirmed": 8,
-      "needs_review": 7,
+      "confirmed": 7,
+      "needs_review": 8,
       "false_positives": 23,
-      "tokens_used": 66793
+      "tokens_used": 66849
     },
     "stage_c": {
-      "patterns_found": 5
+      "patterns_found": 3
     },
     "stage_d": {
       "output_path": "output\\sample-report.md",

@@ -128,6 +128,9 @@ def main():
         print(f"[Noise Filter] {total_noise_filtered} thread(s) excluded before Stage A")
 
     # ── Stage A log ──
+    # Stage A candidate count is reconstructed from Stage B outputs (confirmed + needs_review + false_positives).
+    # This is equivalent to the raw Stage A count only because every Stage A candidate enters Stage B.
+    # If pre-Stage-B filtering is ever added, track stage_a_candidates directly in classify_threads() instead.
     total_candidates = sum(
         len(d.get('confirmed_flags', [])) + len(d.get('needs_review', [])) + len(d.get('false_positives', []))
         for d in results.values()

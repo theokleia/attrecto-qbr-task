@@ -789,6 +789,10 @@ Return ONLY valid JSON:
       "description": "one sentence for the Director",
       "threads_involved": ["thread_id_1", "thread_id_2"],
       "severity": "HIGH or MEDIUM or LOW",
+      "evidence": {{
+        "thread_id_1": "specific quote or observation from this thread",
+        "thread_id_2": "specific quote or observation from this thread"
+      }},
       "recommended_action": "specific action for the Director"
     }}
   ]

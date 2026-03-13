@@ -332,12 +332,13 @@ This directly addresses the contractual data residency concern identified in dis
 
 **Tier 1 — Heuristic (no LLM):** Applied when all three conditions are true:
 - No technical terms, JIRA references, version numbers, or project names in subject/body
-- All participants are internal team members only
-- Body contains exclusively personal/social content with no project-relevant sentences
+- Thread contains a positive social signal (birthday, lunch, social plans, etc.)
+- No project name can be resolved from the thread content
 
 **Important edge case:** The Tier 1 heuristic must not trigger on phrases like "Let's discuss the restaurant app deployment" (technical project topic) or "I'll be at the client site" (project-relevant). The heuristic applies only when personal content is the *sole* content of all messages in the thread.
 
-**Tier 2 — LLM micro-classifier (ambiguous cases, ~10% of threads):**
+**Tier 2 — LLM micro-classifier (ambiguous cases, ~10% of threads at scale):**
+Applied when all three conditions are true: no technical signals detected AND message count ≤ 2 AND project assignment is unresolved (`project == 'Unknown'`). These are fast, cheap checks that target the short, ambiguous threads most likely to be social noise without risking false exclusion of project threads.
 ```
 Is this email thread primarily about a work project, or primarily social/off-topic?
 Return ONLY: {"classification": "PROJECT" | "NOISE", "confidence": 0.0-1.0}
@@ -837,7 +838,7 @@ Each pipeline execution writes a machine-readable run record alongside the repor
 {
   "run_id": "2025-Q2-20250615T143022",
   "quarter": "Q2 2025",
-  "mode": "mock",
+  "mode": "mock",  // live runs show actual token counts; mock runs show 0
   "started_at": "2025-06-15T14:30:22Z",
   "completed_at": "2025-06-15T14:30:26Z",
   "duration_seconds": 4.2,

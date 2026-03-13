@@ -92,6 +92,18 @@ Return ONLY the executive summary text, no headers, no JSON."""
 
 # ── Markdown builders ─────────────────────────────────────────────────────────
 
+def deduplicate_flags(flags: list) -> list:
+    """Remove flags from the same thread with the same flag type, keeping the first (highest severity after sort)."""
+    seen = set()
+    result = []
+    for flag in flags:
+        key = (flag.thread_id, flag.flag_type)
+        if key not in seen:
+            seen.add(key)
+            result.append(flag)
+    return result
+
+
 def flag_confidence_label(flag: ConfirmedFlag) -> str:
     if flag.confidence_score >= 0.85:
         return "[Rule+LLM-confirmed]"
@@ -224,6 +236,7 @@ def generate_report(classification_results: dict,
                           if f.flag_type != "OPERATIONAL_INCIDENT"
                           and f.status != "RESOLVED_IN_QUARTER"]
             open_flags.sort(key=lambda f: SEVERITY_ORDER.get(f.severity, 99))
+            open_flags = deduplicate_flags(open_flags)
 
             lines += [f"### {project}", ""]
             for flag in open_flags:
@@ -240,6 +253,7 @@ def generate_report(classification_results: dict,
                           if f.flag_type != "OPERATIONAL_INCIDENT"
                           and f.status != "RESOLVED_IN_QUARTER"]
             open_flags.sort(key=lambda f: SEVERITY_ORDER.get(f.severity, 99))
+            open_flags = deduplicate_flags(open_flags)
 
             lines += [f"### {project}", ""]
             for flag in open_flags:
@@ -277,13 +291,17 @@ def generate_report(classification_results: dict,
         lines += ["## Cross-Project Patterns", ""]
         for project, pattern in all_patterns:
             severity = pattern.get("severity", "MEDIUM")
-            lines += [
+            evidence = pattern.get("evidence", {})
+            evidence_lines = [f"  - `{tid}`: {ref}" for tid, ref in evidence.items()] if evidence else []
+            pattern_lines = [
                 f"**[{project}] {pattern.get('pattern_type', 'Pattern')}** — `{severity}`",
                 f"> {pattern.get('description', '')}",
                 f"**Threads:** {', '.join(pattern.get('threads_involved', []))}",
-                f"**Action:** {pattern.get('recommended_action', '')}",
-                "",
             ]
+            if evidence_lines:
+                pattern_lines += ["**Evidence:**"] + evidence_lines
+            pattern_lines += [f"**Action:** {pattern.get('recommended_action', '')}", ""]
+            lines += pattern_lines
         lines += ["---", ""]
 
     # ── Needs PM Review ──

@@ -144,7 +144,7 @@ Every flag includes a confidence label: `[Rule+LLM-confirmed]`, `[LLM-confirmed]
 
 ## Architecture Notes
 
-**Why hybrid rules + LLM?** The rule engine (Stage A) reduces LLM calls by ~80% at scale with a representative corpus. The LLM only processes candidates already detected by rules — it never invents flags from scratch.
+**Why hybrid rules + LLM?** The rule engine (Stage A) reduces LLM calls by ~80% at scale with a representative corpus. The LLM only processes candidates already detected by rules — it never invents flags from scratch. With the provided 18-email sample — intentionally dense with flaggable content — Stage B call rates will be higher than this figure.
 
 **Why temperature = 0?** All LLM stages run at temperature 0 for fully deterministic output. This makes the golden test set reliable and PM validation consistent across runs.
 
