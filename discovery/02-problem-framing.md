@@ -8,7 +8,7 @@
 
 > *"Analyze a collection of project emails and generate a concise, high-signal report that tells the Director exactly where to focus their limited attention."*
 
-This is what the task asks for. It is not wrong — but it is incomplete.
+This is what the task asks for. To understand the real problem and the actual goal behind this automation, there are a number of questions we need to ask the client before designing a solution.
 
 ---
 
